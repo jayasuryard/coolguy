@@ -20,12 +20,10 @@ Click the canvas to capture the mouse. **WASD** move · **Shift** sprint · **Sp
 | `npm run dev`      | Vite dev server with HMR                         |
 | `npm run build`    | Typecheck + production build to `dist/`          |
 | `npm run preview`  | Serve the production build locally               |
-| `npm run check`    | Typecheck, lint, format check, unit tests (= CI) |
+| `npm run check`    | Typecheck, lint, format check, unit tests        |
 | `npm test`         | Vitest once; `npm run test:watch` for watch mode |
 | `npm run lint:fix` | ESLint autofix                                   |
 | `npm run format`   | Prettier write                                   |
-
-CI (`.github/workflows/ci.yml`) runs `check` and `build` on every push and PR.
 
 ## Stack
 
