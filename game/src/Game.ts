@@ -25,12 +25,28 @@ import { findObject } from './story/cells';
 import { StoryState } from './story/StoryState';
 import { AudioTimeSource, SilentTimeSource, Transport, scheduleClick } from './transport/Transport';
 
+/** Shell callbacks: the HTML UI owns the pause screen; the game only reports state changes. */
+export interface GameUi {
+  onPause(reason: string): void;
+  onResume(): void;
+}
+
 export interface GameOptions {
   audio: AudioContext | null;
   settings: Settings;
   saveStore: SaveStore | null;
   save: SaveData;
+  ui: GameUi;
 }
+
+/** Heavy assets fetched (with progress) before the player presses New Game / Continue. */
+export interface Preloaded {
+  assets: AssetLibrary | null;
+  city: CityModel | null;
+}
+
+/** Progress callback: fraction 0–1 and a short status line. */
+export type LoadProgress = (fraction: number, status: string) => void;
 
 const INTERACT_RANGE = 5;
 const INTERACT_CONE = Math.cos((70 * Math.PI) / 180);
@@ -62,7 +78,8 @@ export class Game {
   private readonly kitView: KitView;
   private readonly rig: CameraRig;
   private readonly performer: PhrasePerformer;
-  private readonly settings: Settings;
+  private settings: Settings;
+  private readonly ui: GameUi;
   private readonly saveStore: SaveStore | null;
   private revision: number;
   private selectedPhrase = 0;
@@ -73,16 +90,43 @@ export class Game {
   private wasLocked = false;
   private readonly tmp = new THREE.Vector3();
 
-  static async create(container: HTMLElement, opts: GameOptions): Promise<Game> {
-    const [, assets, city] = await Promise.all([
-      RAPIER.init(),
-      AssetLibrary.load().catch((err: unknown) => {
-        console.error('[assets] kit failed to load; using greybox', err);
-        return null;
-      }),
-      CONTENT.world.autoFloors === false ? CityModel.load() : Promise.resolve(null),
-    ]);
-    return new Game(container, opts, assets, city);
+  /**
+   * Fetch physics and models, reporting real progress (bytes for models, steps otherwise).
+   * Throws if a required piece fails, so the loading screen can offer a retry.
+   */
+  static async preload(onProgress: LoadProgress): Promise<Preloaded> {
+    const parts = { physics: 0, kit: 0, city: 0 };
+    const weights = { physics: 0.15, kit: 0.25, city: 0.6 };
+    const report = (status: string) =>
+      onProgress(
+        parts.physics * weights.physics + parts.kit * weights.kit + parts.city * weights.city,
+        status,
+      );
+    report('Waking the tram line…');
+    const physics = RAPIER.init().then(() => {
+      parts.physics = 1;
+      report('Laying the paving stones…');
+    });
+    const assets = AssetLibrary.load(undefined, (f) => {
+      parts.kit = f;
+      report('Tuning Kit’s guitar…');
+    });
+    const city =
+      CONTENT.world.autoFloors === false
+        ? CityModel.load(undefined, (f) => {
+            parts.city = f;
+            report('Loading the quay…');
+          })
+        : Promise.resolve(null);
+    const [, a, c] = await Promise.all([physics, assets, city]);
+    if (CONTENT.world.autoFloors === false && !c) throw new Error('the city model failed to load');
+    parts.physics = parts.kit = parts.city = 1;
+    report('Ready.');
+    return { assets: a, city: c };
+  }
+
+  static create(container: HTMLElement, opts: GameOptions, pre: Preloaded): Game {
+    return new Game(container, opts, pre.assets, pre.city);
   }
 
   private constructor(
@@ -92,6 +136,7 @@ export class Game {
     readonly city: CityModel | null = null,
   ) {
     this.settings = opts.settings;
+    this.ui = opts.ui;
     this.saveStore = opts.saveStore;
     this.revision = opts.save.revision;
 
@@ -105,13 +150,13 @@ export class Game {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(this.renderer.domElement);
     this.camera = new THREE.PerspectiveCamera(
       60,
       container.clientWidth / container.clientHeight,
       0.1,
-      800,
+      2000,
     );
 
     const canvas = this.renderer.domElement;
@@ -119,9 +164,7 @@ export class Game {
       e.preventDefault();
       this.pause('Graphics context lost — waiting for the browser to restore it.');
     });
-    canvas.addEventListener('webglcontextrestored', () =>
-      this.setPauseReason('Graphics restored.'),
-    );
+    canvas.addEventListener('webglcontextrestored', () => this.ui.onPause('Graphics restored.'));
 
     // ---- story & world ----
     this.story = new StoryState(CONTENT);
@@ -179,7 +222,7 @@ export class Game {
             ctx,
             time,
             beat % CONFIG.music.beatsPerBar === 0,
-            this.settings.effectsVolume,
+            this.settings.effectsVolume * this.settings.masterVolume,
           );
         }
       });
@@ -199,16 +242,59 @@ export class Game {
     canvas.addEventListener('click', () => {
       if (!this.loop.paused) this.input.requestPointerLock();
     });
-    document.getElementById('btn-resume')!.addEventListener('click', () => this.resume());
-    document
-      .getElementById('btn-export')!
-      .addEventListener('click', () => this.exportCurrentSave());
     window.addEventListener('resize', () => this.onResize());
 
     this.hud.setVersion(this.versionDef(this.story.activeVersion));
     this.hud.setRank(this.story.rank.title);
     if (!this.saveStore)
       this.setSaveStatus('Temporary session: progress is not saved. Use Export.');
+    this.applySettings(this.settings);
+  }
+
+  /** Apply (possibly changed) settings live: display, camera, controls. */
+  applySettings(s: Settings): void {
+    this.settings = s;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * s.renderScale);
+    this.renderer.shadowMap.enabled = s.shadows !== 'off';
+    const size = s.shadows === 'high' ? 2048 : 1024;
+    if (this.env.sun.shadow.mapSize.x !== size) {
+      this.env.sun.shadow.mapSize.set(size, size);
+      this.env.sun.shadow.map?.dispose();
+      this.env.sun.shadow.map = null;
+    }
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+      if (m) m.needsUpdate = true;
+    });
+    this.camera.fov = s.fov;
+    this.camera.updateProjectionMatrix();
+    this.rig.lookScale = s.mouseSensitivity;
+    this.rig.invertY = s.invertY;
+    this.input.setOverrides(s.bindings);
+  }
+
+  /** District, chapter and objective for the pause screen. */
+  status(): { district: string; chapter: string; objective: string } {
+    const ch = this.story.currentChapter;
+    const district = CONTENT.world.districts.find((d) => d.id === ch?.district)?.name ?? '';
+    return { district, chapter: ch?.title ?? '', objective: ch?.objective ?? '' };
+  }
+
+  /** Reload the last committed checkpoint (story + position). */
+  async restartCheckpoint(): Promise<boolean> {
+    const loaded = await this.saveStore?.loadLatest().catch(() => null);
+    if (!loaded) return false;
+    const before = this.story.activeVersion;
+    this.story.restore({
+      facts: loaded.save.questFacts,
+      unlockedVersions: loaded.save.unlockedVersions,
+      activeVersion: loaded.save.activeVersion,
+      lastSafePad: loaded.save.lastSafePad,
+    });
+    this.revision = loaded.save.revision;
+    this.afterStoryChange(before);
+    this.teleportToPad(this.story.lastSafePad);
+    return true;
   }
 
   start(): void {
@@ -431,7 +517,7 @@ export class Game {
     }
   }
 
-  private exportCurrentSave(): void {
+  exportCurrentSave(): void {
     const blob = new Blob([exportSave({ ...this.buildSave(), revision: this.revision })], {
       type: 'application/json',
     });
@@ -448,27 +534,30 @@ export class Game {
 
   // ---------------------------------------------------------------- pause
 
+  get paused(): boolean {
+    return this.loop.paused;
+  }
+
   pause(reason: string): void {
-    if (this.loop.paused) return this.setPauseReason(reason);
+    if (this.loop.paused) return this.ui.onPause(reason);
     this.loop.pause();
     this.transport.pause();
     this.performer.cancel();
     if (document.pointerLockElement) document.exitPointerLock();
-    this.setPauseReason(reason);
-    document.getElementById('pause')!.hidden = false;
+    this.hud.show(false);
+    this.ui.onPause(reason);
   }
 
   /** Resume needs a user gesture (restores audio + pointer). Counts in one bar. */
   resume(): void {
-    document.getElementById('pause')!.hidden = true;
+    if (!this.loop.paused) return;
+    this.input.consume('pause', 'pressed'); // the key that opened Pause must not re-pause
     this.loop.resume();
     void this.transport.resume();
     this.last = performance.now();
+    this.hud.show(true);
     this.input.requestPointerLock();
-  }
-
-  private setPauseReason(text: string): void {
-    document.getElementById('pause-reason')!.textContent = text;
+    this.ui.onResume();
   }
 
   // ---------------------------------------------------------------- helpers

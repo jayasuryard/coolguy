@@ -17,7 +17,11 @@ export class Environment {
   ) {
     scene.background = HORIZON.clone();
     // The island city is meant to be seen across the harbour, so fog only softens the far sea.
-    scene.fog = new THREE.Fog(HORIZON.clone(), waterLevel === null ? 90 : 220, waterLevel === null ? 260 : 900);
+    scene.fog = new THREE.Fog(
+      HORIZON.clone(),
+      waterLevel === null ? 90 : 220,
+      waterLevel === null ? 260 : 900,
+    );
     scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x8a6a4c, 1.0)); // cool sky, warm stone bounce
 
     this.sun = new THREE.DirectionalLight(0xffd6a0, 3.0);
@@ -64,7 +68,9 @@ export class Environment {
     // Harbour south of Punch Quay.
     const all = waterLevel !== null;
     const water = new THREE.Mesh(
-      new THREE.PlaneGeometry(all ? 4000 : envelope.width + 800, all ? 4000 : 600).rotateX(-Math.PI / 2),
+      new THREE.PlaneGeometry(all ? 4000 : envelope.width + 800, all ? 4000 : 600).rotateX(
+        -Math.PI / 2,
+      ),
       new THREE.MeshStandardMaterial({ color: 0x2f7d8c, roughness: 0.12, metalness: 0.25 }),
     );
     if (all) water.position.set(envelope.width / 2, waterLevel, envelope.depth / 2);

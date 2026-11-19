@@ -33,6 +33,7 @@ export function loadContent(root: string, modelDir?: string): ContentBundle {
     facts: read('story', 'facts.json'),
     ranks: read('story', 'ranks.json'),
     phrases: read('story', 'phrases.json'),
+    chapters: read('story', 'chapters.json'),
     missions: readdirSync(missionDir)
       .filter((f) => f.endsWith('.json'))
       .sort()

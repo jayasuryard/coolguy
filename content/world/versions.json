@@ -34,12 +34,12 @@
     "description": "The city's original routines replayed; an old gallery crosses the stairs.",
     "overlays": [
       {
-        "cell": "cell.4.0",
+        "cell": "cell.4.1",
         "add": [
           {
             "id": "keepsake.crown.gallery",
             "kind": "block",
-            "center": [262, 16, 58],
+            "center": [262, 56, 70],
             "size": [30, 0.5, 4],
             "color": "#e3d7b8"
           }

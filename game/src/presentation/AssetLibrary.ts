@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { gltfLoader } from './loader';
 
 /** Kit GLBs exported from the Blender kit project (see art/README.md). */
 export const KIT_FILES = ['assets/models/punch_quay_kit.glb'];
@@ -11,16 +11,33 @@ export const KIT_FILES = ['assets/models/punch_quay_kit.glb'];
 export class AssetLibrary {
   private readonly pieces = new Map<string, THREE.Object3D>();
 
-  static async load(files = KIT_FILES): Promise<AssetLibrary> {
+  static async load(
+    files = KIT_FILES,
+    onProgress?: (fraction: number) => void,
+  ): Promise<AssetLibrary> {
     const lib = new AssetLibrary();
-    const loader = new GLTFLoader();
+    const loader = gltfLoader();
     const base = import.meta.env.BASE_URL;
+    const total = files.length + 1;
+    let done = 0;
+    const step = (e?: ProgressEvent) =>
+      onProgress?.(Math.min(1, (done + (e && e.total ? e.loaded / e.total : 0)) / total));
     for (const f of files) {
-      const gltf = await loader.loadAsync(base + f);
+      const gltf = await loader.loadAsync(base + f, step);
+      done++;
       gltf.scene.traverse((o) => {
         if (o.name.startsWith('KIT_') && !lib.pieces.has(o.name)) lib.pieces.set(o.name, o);
       });
     }
+    try {
+      const kit = await loader.loadAsync(base + 'assets/models/kit.glb', step);
+      lib.kitModel = kit.scene;
+      lib.kitClips = kit.animations;
+    } catch (err) {
+      console.warn('[assets] no kit.glb; Kit stays a placeholder', err);
+    }
+    done = total;
+    step();
     for (const piece of lib.pieces.values()) {
       piece.traverse((o) => {
         if ((o as THREE.Mesh).isMesh) {
@@ -31,6 +48,11 @@ export class AssetLibrary {
     }
     return lib;
   }
+
+  /** Kit Vale's character model (Hunyuan 3D export, optimized by `npm run assets`). */
+  kitModel: THREE.Object3D | null = null;
+  /** Animation clips exported with Kit (empty until the model is rigged). */
+  kitClips: THREE.AnimationClip[] = [];
 
   has(name: string): boolean {
     return this.pieces.has(name);

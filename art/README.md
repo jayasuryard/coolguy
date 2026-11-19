@@ -1,8 +1,57 @@
 # Art pipeline
 
+## Brand
+
+- **Logo masters** (in `art/brand/`):
+  - `coolguy-logo-white-colour.webp`: white lettering with brass pegs and cobalt bolt, for dark
+    screens.
+  - `coolguy-logo-white.webp`: all-white, single colour.
+  - `coolguy-logo-source.png`: the original dark-on-cream artwork, for light surfaces.
+- **Game copies** (in `game/public/assets/ui/`): `logo-light.webp` (colour, used for the menu
+  title and loading screen), `logo-white.webp` (mono, used for the small header lockups),
+  `logo.webp` (original colours, transparent) and the favicons `icon-64.png` and `icon-180.png`.
+- **Placement:** the colour logo is the main-menu title and sits above "Bellweather" on the
+  loading screen. The mono logo heads the Pause, Settings and Credits screens.
+- **Type:**
+  - Saira heavy italic for anything that speaks in the logo's voice: headings, menu items, tabs,
+    buttons, eyebrows, key hints and the HUD.
+  - Nunito Sans for body copy and objectives, for legibility.
+  - Monospace for keycaps and values.
+- **Colour:** cream `#F4EAD8`, amber `#EDAE5E` for focus and actions, ink `#0B1412`. The cobalt
+  `#315CA9` stays reserved for Kit's input, as the Art Direction doc asks.
+
 Art follows the **coolguy Art Direction and Storyboard** document. Its palette is used as
 starting swatches: salt stone `CFC0AA`, tram enamel `315B5B`, brick `A65037`, Kit jacket `C18A39`,
 guitar cobalt `315CA9`, bounty crimson `D84C54`.
+
+## Bellweather city (Blender → GLB)
+
+- **Source:** the hosted Blender project _coolguy — Bellweather city_ (Higgsfield 3D Jutsu),
+  https://higgsfield.ai/3d-jutsu/6f6ae97e-0c00-4f47-847b-0f092e006201
+- **Export:** `game/public/assets/models/bellweather_city.glb`, loaded whole by `CityModel`
+  whenever `content/world/world.json` sets `"autoFloors": false`.
+- **Coordinates:** Blender X is the game's x; Blender −Y is the game's z (south); Blender Z is up.
+  Game positions in content can be read straight off the Blender scene.
+- **Layout** (built from the island concept and the top-down plan), in metres:
+
+  | Zone             | Where (x, z)                        | Height                             |
+  | ---------------- | ----------------------------------- | ---------------------------------- |
+  | Punch Quay       | z ≥ 268, x ≤ 340                    | 0 (sea at −1.6)                    |
+  | Village terraces | x < 304, bands of z 230/190/150/108 | 9 / 16 / 23 / 30 / 37              |
+  | Grand stair      | x 304–320, from z 230 to 108        | 9 → 30 (landing) → 52              |
+  | Civic plaza      | x ≥ 228, z ≤ 108                    | 52                                 |
+  | Viaduct          | x 320 → 452 at z 181–187            | deck at 30                         |
+  | East hill        | x > 320                             | slopes from the sea up to about 50 |
+
+- **Naming contract with the game:**
+  - `CITY_*` meshes are rendered.
+  - `*__col` meshes are rendered and also used as colliders (the terrain).
+  - `COL_*` meshes are collision only: houses, the civic hall, the viaduct deck and bastion, the
+    tram, ferry and canopy columns, and the clock-room roof.
+  - `REVIEW_*` objects, cameras and lights are ignored.
+- **Materials:** a small set of Principled materials driven by vertex colour (`Col`): stone,
+  plaster, roof, painted iron, flora, wood and rock, plus glass and the emissive bulbs. This keeps
+  the whole island to a few dozen draw calls.
 
 ## Environment kit (Blender → GLB)
 

@@ -43,6 +43,12 @@ export class StoryState {
     return current;
   }
 
+  /** First chapter whose completion fact is missing (the last one once the campaign is done). */
+  get currentChapter() {
+    const list = this.content.chapters;
+    return list.find((c) => !this.facts.has(c.completeFact)) ?? list[list.length - 1];
+  }
+
   get learnedPhrases(): string[] {
     return this.content.phrases.filter((p) => this.facts.has(p.fact)).map((p) => p.id);
   }

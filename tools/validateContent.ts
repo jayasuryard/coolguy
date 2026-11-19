@@ -115,6 +115,12 @@ export function validateContent(c: ContentBundle): string[] {
   const phraseIds = new Set(c.phrases.map((p) => p.id));
   c.phrases.forEach((p) => needFact(`phrase ${p.id}`, p.fact));
 
+  const districtIds = new Set(world.districts.map((d) => d.id));
+  for (const ch of c.chapters) {
+    needFact(ch.id, ch.completeFact);
+    if (!districtIds.has(ch.district)) err(`${ch.id}: unknown district "${ch.district}"`);
+  }
+
   const missionIds = new Set<string>();
   for (const m of c.missions) {
     if (missionIds.has(m.id)) err(`duplicate mission "${m.id}"`);

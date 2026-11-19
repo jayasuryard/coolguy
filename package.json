@@ -18,15 +18,20 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run validate && npm run test",
-    "validate": "node tools/validate-content.ts"
+    "validate": "node tools/validate-content.ts",
+    "assets": "npm run rig:kit && gltf-transform optimize art/source/kit_rigged.glb game/public/assets/models/kit.glb --texture-compress webp --texture-size 1024 --compress meshopt --simplify false && gltf-transform meshopt art/source/bellweather_city.glb game/public/assets/models/bellweather_city.glb",
+    "rig:kit": "node tools/rig-kit.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.21.0",
+    "@fontsource/nunito-sans": "5.3.0",
+    "@fontsource/saira": "5.3.0",
     "lil-gui": "0.21.0",
     "three": "0.187.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@gltf-transform/cli": "4.5.1",
     "@types/node": "26.6.6",
     "@types/three": "0.187.0",
     "eslint": "10.15.0",

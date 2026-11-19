@@ -34,8 +34,9 @@ describe('validateContent', () => {
     expect(errors).toMatch(/not a receiver/);
   });
 
-  it('rejects pads below their district floor', () => {
+  it('rejects pads below their district floor (greybox worlds)', () => {
     const c = fresh();
+    c.world.autoFloors = true;
     c.world.cells
       .find((x) => x.id === 'cell.3.3')!
       .objects.push({

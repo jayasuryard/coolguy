@@ -1,4 +1,5 @@
 import type {
+  ChapterDef,
   ContentBundle,
   FactDef,
   MissionDef,
@@ -7,6 +8,7 @@ import type {
   VersionDef,
   WorldDef,
 } from '@content/types';
+import chapters from '@content/story/chapters.json';
 import facts from '@content/story/facts.json';
 import phrases from '@content/story/phrases.json';
 import ranks from '@content/story/ranks.json';
@@ -25,6 +27,7 @@ export const CONTENT: ContentBundle = {
   facts: facts as FactDef[],
   ranks: ranks as RankDef[],
   phrases: phrases as PhraseDef[],
+  chapters: chapters as ChapterDef[],
   missions: Object.keys(missions)
     .sort()
     .map((k) => missions[k]!),

@@ -8,6 +8,9 @@ export type RayProbe = (origin: V3, dir: V3, max: number) => number;
 export class CameraRig {
   yaw = 0;
   pitch = 0.25;
+  /** Player look sensitivity multiplier and Y inversion (Settings → Controls). */
+  lookScale = 1;
+  invertY = false;
   private arm = CONFIG.camera.armLength;
   private readonly pivot = new THREE.Vector3();
   private readonly dir = new THREE.Vector3();
@@ -30,9 +33,11 @@ export class CameraRig {
     look: { dx: number; dy: number; padX: number; padY: number },
   ): void {
     const c = CONFIG.camera;
-    this.yaw -= look.dx * c.sensitivity + look.padX * c.padSensitivity * dt;
+    const k = this.lookScale;
+    const iy = this.invertY ? -1 : 1;
+    this.yaw -= (look.dx * c.sensitivity + look.padX * c.padSensitivity * dt) * k;
     this.pitch = THREE.MathUtils.clamp(
-      this.pitch + look.dy * c.sensitivity + look.padY * c.padSensitivity * dt,
+      this.pitch + (look.dy * c.sensitivity + look.padY * c.padSensitivity * dt) * k * iy,
       -0.5,
       1.2,
     );

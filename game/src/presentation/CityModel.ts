@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { gltfLoader } from './loader';
 
 /** The whole-island city export from the Blender project (see art/README.md). */
 export const CITY_FILE = 'assets/models/bellweather_city.glb';
@@ -23,10 +23,15 @@ export class CityModel {
     readonly colliders: ColliderMesh[],
   ) {}
 
-  static async load(file = CITY_FILE): Promise<CityModel | null> {
+  static async load(
+    file = CITY_FILE,
+    onProgress?: (fraction: number) => void,
+  ): Promise<CityModel | null> {
     let gltf;
     try {
-      gltf = await new GLTFLoader().loadAsync(import.meta.env.BASE_URL + file);
+      gltf = await gltfLoader().loadAsync(import.meta.env.BASE_URL + file, (e) => {
+        if (e.total) onProgress?.(Math.min(0.95, e.loaded / e.total));
+      });
     } catch (err) {
       console.warn('[city] no city model; falling back to greybox floors', err);
       return null;
@@ -37,7 +42,11 @@ export class CityModel {
     const drop: THREE.Object3D[] = [];
     const colliders: ColliderMesh[] = [];
     scene.traverse((o) => {
-      if (o.name.startsWith('REVIEW_') || (o as THREE.Camera).isCamera || (o as THREE.Light).isLight) {
+      if (
+        o.name.startsWith('REVIEW_') ||
+        (o as THREE.Camera).isCamera ||
+        (o as THREE.Light).isLight
+      ) {
         drop.push(o);
         return;
       }
@@ -64,6 +73,7 @@ export class CityModel {
     const root = new THREE.Group();
     root.name = 'city';
     root.add(scene);
+    onProgress?.(1);
     return new CityModel(root, colliders);
   }
 }

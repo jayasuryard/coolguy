@@ -7,3 +7,6 @@ coverage/
 .env.*
 !.env.example
 .vite/
+
+# Raw model masters (large; keep in Git LFS or shared storage)
+art/source/

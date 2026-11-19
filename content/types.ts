@@ -146,6 +146,17 @@ export interface MissionDef {
   feedback: string[];
 }
 
+/** A campaign level as shown on the pause screen. */
+export interface ChapterDef {
+  id: string;
+  title: string;
+  /** District id (see WorldDef.districts). */
+  district: string;
+  objective: string;
+  /** The chapter is complete once this fact is granted. */
+  completeFact: string;
+}
+
 /** Everything the runtime and the validator load. */
 export interface ContentBundle {
   world: WorldDef;
@@ -154,6 +165,7 @@ export interface ContentBundle {
   ranks: RankDef[];
   phrases: PhraseDef[];
   missions: MissionDef[];
+  chapters: ChapterDef[];
   /** KIT_* roots available in the model library (filled by tools; absent in the runtime). */
   modelNames?: string[];
 }

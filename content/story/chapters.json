@@ -1,0 +1,44 @@
+[
+  {
+    "id": "level.1",
+    "title": "Loose Change",
+    "district": "quay",
+    "objective": "Set up the amp, tune to the ferry horn and play for the quay.",
+    "completeFact": "job.1.complete"
+  },
+  {
+    "id": "level.2",
+    "title": "One More Beat",
+    "district": "quay",
+    "objective": "Help Paz up the tram steps and hold the closing chord for Ione.",
+    "completeFact": "job.2.complete"
+  },
+  {
+    "id": "level.3",
+    "title": "Last Request",
+    "district": "market",
+    "objective": "Play Mara's request at the evening market.",
+    "completeFact": "job.3.complete"
+  },
+  {
+    "id": "level.4",
+    "title": "Last Tram Out",
+    "district": "quay",
+    "objective": "Hold the tram doors, then wake the Punch Clock below the quay.",
+    "completeFact": "machine.quay.clock"
+  },
+  {
+    "id": "level.5",
+    "title": "Market Under Glass",
+    "district": "market",
+    "objective": "Escort the vendors to the service stairs.",
+    "completeFact": "machine.market.press"
+  },
+  {
+    "id": "level.6",
+    "title": "The Last Count",
+    "district": "crown",
+    "objective": "Relay the spare beat up the hill to the Crown Lathe.",
+    "completeFact": "machine.crown.lathe"
+  }
+]

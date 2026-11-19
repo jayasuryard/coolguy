@@ -70,13 +70,19 @@ describe('cells', () => {
     expect(cellAt(CONTENT.world, 10, 10_000)).toBeNull();
   });
 
-  it('applies version overlays: hide + add, floor always present', () => {
+  it('applies version overlays: hide + add; floors only for greybox worlds', () => {
     const ids = (v: 'timetable' | 'backstage') =>
       resolveCell(CONTENT.world, CONTENT.versions, 4, 4, v).map((o) => o.id);
     expect(ids('timetable')).toContain('quay.stall.crate');
     expect(ids('timetable')).not.toContain('backstage.quay.gangway');
     expect(ids('backstage')).not.toContain('quay.stall.crate');
     expect(ids('backstage')).toContain('backstage.quay.gangway');
-    expect(ids('backstage')).toContain('cell.4.4.floor');
+    // The island city provides terrain, so no auto floor slab…
+    expect(ids('backstage')).not.toContain('cell.4.4.floor');
+    // …but greybox worlds still get one.
+    const greybox = { ...CONTENT.world, autoFloors: true };
+    expect(resolveCell(greybox, CONTENT.versions, 4, 4, 'timetable').map((o) => o.id)).toContain(
+      'cell.4.4.floor',
+    );
   });
 });
