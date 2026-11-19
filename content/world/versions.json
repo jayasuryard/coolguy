@@ -1,0 +1,57 @@
+[
+  {
+    "id": "timetable",
+    "name": "Timetable",
+    "icon": "◷",
+    "description": "The city as residents know it: porcelain dials and posted routes.",
+    "overlays": []
+  },
+  {
+    "id": "backstage",
+    "name": "Backstage",
+    "icon": "⌁",
+    "description": "Service paths exposed: a gangway runs beneath the viaduct.",
+    "overlays": [
+      {
+        "cell": "cell.4.4",
+        "hide": ["quay.stall.crate"],
+        "add": [
+          {
+            "id": "backstage.quay.gangway",
+            "kind": "block",
+            "center": [305, 0.25, 300],
+            "size": [30, 0.5, 3],
+            "color": "#d9c45a"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keepsake",
+    "name": "Keepsake",
+    "icon": "✎",
+    "description": "The city's original routines replayed; an old gallery crosses the stairs.",
+    "overlays": [
+      {
+        "cell": "cell.4.0",
+        "add": [
+          {
+            "id": "keepsake.crown.gallery",
+            "kind": "block",
+            "center": [262, 16, 58],
+            "size": [30, 0.5, 4],
+            "color": "#e3d7b8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "openScore",
+    "name": "Open Score",
+    "icon": "♪",
+    "description": "Residents control their public cues; annotations everywhere.",
+    "overlays": []
+  }
+]

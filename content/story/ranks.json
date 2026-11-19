@@ -1,0 +1,17 @@
+[
+  {
+    "rank": 1,
+    "title": "Protector",
+    "requires": ["rescue.tram", "defeated.collector", "machine.quay.clock"]
+  },
+  {
+    "rank": 2,
+    "title": "Defender",
+    "requires": ["rescue.vendors", "defeated.pressChampion", "machine.market.press"]
+  },
+  {
+    "rank": 3,
+    "title": "City Hero",
+    "requires": ["relay.districts", "defeated.crownZero", "machine.crown.lathe"]
+  }
+]

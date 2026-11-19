@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "0.1.0",
+  "revision": 7,
+  "lastSafePad": "pad.quay.lower",
+  "activeVersion": "timetable",
+  "unlockedVersions": ["timetable"],
+  "learnedPhrases": ["closing"],
+  "questFacts": [
+    "defeated.collector",
+    "goggles.collected",
+    "job.1.complete",
+    "job.2.complete",
+    "job.3.complete",
+    "key.quay.lower",
+    "lens.raisedOnce",
+    "phrase.closing",
+    "rescue.tram"
+  ],
+  "completedStories": [],
+  "endingChoice": null
+}

@@ -1,0 +1,5 @@
+[
+  { "id": "closing", "name": "Closing Call", "fact": "phrase.closing" },
+  { "id": "shutter", "name": "Shutter Rise", "fact": "phrase.shutter" },
+  { "id": "spare", "name": "Spare Beat", "fact": "phrase.spare" }
+]

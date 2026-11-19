@@ -12,11 +12,13 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./game/src/*"],
+      "@content/*": ["./content/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["game/src", "content", "tools", "vite.config.ts"]
 }

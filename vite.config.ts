@@ -2,19 +2,29 @@
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
+const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
+
 export default defineConfig({
+  root: r('./game'),
+  publicDir: r('./game/public'),
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: {
+      '@': r('./game/src'),
+      '@content': r('./content'),
+    },
   },
   server: { port: 5173, strictPort: true },
   build: {
+    outDir: r('./dist'),
+    emptyOutDir: true,
     target: 'es2022',
     sourcemap: true,
-    // three + rapier (WASM inlined) are large by nature
+    // three + rapier (WASM inlined) are large by nature; split per district later.
     chunkSizeWarningLimit: 6000,
   },
   test: {
+    root: r('.'),
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['game/src/**/*.test.ts', 'tools/**/*.test.ts'],
   },
 });

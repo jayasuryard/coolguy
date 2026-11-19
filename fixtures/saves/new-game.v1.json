@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "0.1.0",
+  "revision": 1,
+  "lastSafePad": "pad.quay.home",
+  "activeVersion": "timetable",
+  "unlockedVersions": ["timetable"],
+  "learnedPhrases": [],
+  "questFacts": [],
+  "completedStories": [],
+  "endingChoice": null
+}

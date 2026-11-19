@@ -1,0 +1,19 @@
+{
+  "id": "mission.quay.clock",
+  "version": "timetable",
+  "pad": "pad.quay.lower",
+  "requires": ["rescue.tram", "defeated.collector", "key.quay.lower", "phrase.closing"],
+  "trigger": { "event": "phraseReleased", "receiver": "receiver.quay.clock", "phrase": "closing" },
+  "effects": {
+    "facts": ["machine.quay.clock"],
+    "unlockVersions": ["backstage"],
+    "activateVersion": "backstage",
+    "returnPad": "pad.quay.lower"
+  },
+  "feedback": [
+    "Clock drum rotates",
+    "Lamp changes shape",
+    "Service stairs appear",
+    "Journal points uphill"
+  ]
+}

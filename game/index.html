@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>coolguy</title>
+  </head>
+  <body>
+    <div id="app" aria-hidden="true"></div>
+
+    <!-- Shell: served first, owns menus, settings, compatibility and error recovery. -->
+    <main id="shell">
+      <h1>coolguy</h1>
+      <p class="tagline">Bellweather · the last tram into Punch Quay</p>
+
+      <section id="compat" hidden>
+        <h2>This browser can’t run coolguy yet</h2>
+        <p id="compat-reason"></p>
+      </section>
+
+      <nav id="menu" aria-label="Main menu">
+        <button id="btn-continue" type="button" disabled>Continue</button>
+        <button id="btn-new" type="button" disabled>New Game</button>
+        <button id="btn-settings" type="button">Settings</button>
+      </nav>
+      <p id="boot-status" role="status">Checking your browser…</p>
+    </main>
+
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <form method="dialog">
+        <h2 id="settings-title">Settings</h2>
+        <div id="settings-fields"></div>
+        <menu><button value="close">Done</button></menu>
+      </form>
+    </dialog>
+
+    <section id="pause" hidden aria-labelledby="pause-title">
+      <h2 id="pause-title">Paused</h2>
+      <p id="pause-reason"></p>
+      <button id="btn-resume" type="button">Resume</button>
+      <button id="btn-export" type="button">Export save</button>
+    </section>
+
+    <section id="hud" hidden aria-label="Game status">
+      <div id="hud-top">
+        <span id="hud-version"></span>
+        <span id="hud-rank"></span>
+      </div>
+      <p id="hud-prompt" hidden></p>
+      <div id="hud-bottom">
+        <span id="hud-lamp" aria-hidden="true"></span>
+        <span id="hud-phrase"></span>
+        <span id="hud-judge" role="status"></span>
+      </div>
+      <p id="save-status" role="status"></p>
+      <p id="dev-line"></p>
+    </section>
+
+    <section id="captions" aria-live="polite" aria-label="Captions"></section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
