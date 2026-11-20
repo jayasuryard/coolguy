@@ -70,6 +70,14 @@ export class Simulation implements CellSink {
     return hit ? hit.timeOfImpact : maxDist;
   }
 
+  /** Height of the ground under (x, z), searching down from a little above `nearY`. */
+  groundY(x: number, z: number, nearY: number): number {
+    const top = nearY + 2.5;
+    const ray = new this.rapier.Ray({ x, y: top, z }, { x: 0, y: -1, z: 0 });
+    const hit = this.world.castRay(ray, 40, true, undefined, undefined, this.kit.collider);
+    return hit ? top - hit.timeOfImpact : nearY;
+  }
+
   /** Invisible walls around the playable envelope. */
   private addBoundary(w: number, d: number): void {
     const R = this.rapier;

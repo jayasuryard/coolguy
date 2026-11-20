@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { gltfLoader } from './loader';
 
 /** Kit GLBs exported from the Blender kit project (see art/README.md). */
-export const KIT_FILES = ['assets/models/punch_quay_kit.glb'];
+export const KIT_FILES = ['assets/models/punch_quay_kit.glb', 'assets/models/tram.glb'];
 
 /**
  * Loads kit GLBs once and hands out clones of their `KIT_*` roots.

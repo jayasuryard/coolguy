@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run validate && npm run test",
     "validate": "node tools/validate-content.ts",
-    "assets": "npm run rig:kit && gltf-transform optimize art/source/kit_rigged.glb game/public/assets/models/kit.glb --texture-compress webp --texture-size 1024 --compress meshopt --simplify false && gltf-transform meshopt art/source/bellweather_city.glb game/public/assets/models/bellweather_city.glb",
+    "assets": "npm run rig:kit && gltf-transform optimize art/source/kit_rigged.glb game/public/assets/models/kit.glb --texture-compress webp --texture-size 1024 --compress meshopt --simplify false && gltf-transform optimize art/source/tram_hunyuan.glb game/public/assets/models/tram.glb --texture-compress webp --texture-size 1024 --compress meshopt --simplify false --flatten false && gltf-transform meshopt art/source/bellweather_city.glb game/public/assets/models/bellweather_city.glb",
     "rig:kit": "node tools/rig-kit.mjs"
   },
   "dependencies": {

@@ -157,6 +157,67 @@ export interface ChapterDef {
   completeFact: string;
 }
 
+/** A character on the street: a resident to talk to or escort, or a machine to out-play. */
+export interface ActorDef {
+  id: string;
+  name: string;
+  kind: 'npc' | 'enemy';
+  /** Where the actor stands when a step brings it on stage (y is snapped to the ground). */
+  position: Vec3;
+  color: string;
+  /** Enemies: on-beat hits needed to shut it down. */
+  hp?: number;
+  /** Enemies: chase speed in m/s. */
+  speed?: number;
+  /** Visual size multiplier (1 = person-sized). */
+  scale?: number;
+}
+
+export type StepTrigger =
+  /** Press Interact next to a resident. */
+  | { type: 'talk'; npc: string }
+  /** Press Interact at a spot (an amp, a lever). */
+  | { type: 'use'; position: Vec3; label: string }
+  /** Walk into a radius. */
+  | { type: 'reach'; position: Vec3; radius: number }
+  /** Walk over a pickup. */
+  | { type: 'collect'; position: Vec3; item: string }
+  /** Land `hits` on-beat releases of a phrase while standing inside the radius. */
+  | { type: 'perform'; position: Vec3; radius: number; phrase: string; hits: number }
+  /** One on-beat release of a phrase into a receiver. */
+  | { type: 'play'; receiver: string; phrase: string }
+  /** Out-play an enemy: every on-beat release in range staggers it. */
+  | { type: 'defeat'; enemy: string }
+  /** Lead residents to a spot; they follow while Kit stays close. */
+  | { type: 'escort'; npcs: string[]; position: Vec3; radius: number }
+  /** Completed by a mission granting this fact; `receiver` is the waypoint. */
+  | { type: 'fact'; fact: string; receiver: string };
+
+/**
+ * One objective of the campaign. Steps run strictly in order; finishing one grants the implicit
+ * fact `step.<id>` (so progress lives in the save's quest facts) plus `effects.facts`.
+ */
+export interface StepDef {
+  id: string;
+  objective: string;
+  trigger: StepTrigger;
+  /** Actors on stage while this step is current. */
+  actors?: string[];
+  /** Captions when the step becomes current ("Speaker: line"). */
+  intro?: string[];
+  /** Captions when the step completes. */
+  lines?: string[];
+  effects?: {
+    facts?: string[];
+    /** Fade out, show the card, and put Kit on this pad (also the new safe pad). */
+    travelTo?: string;
+    /** Title card: "Title|subtitle". */
+    card?: string;
+    /** Roll the credits after this step. */
+    ending?: boolean;
+  };
+}
+
 /** Everything the runtime and the validator load. */
 export interface ContentBundle {
   world: WorldDef;
@@ -166,6 +227,8 @@ export interface ContentBundle {
   phrases: PhraseDef[];
   missions: MissionDef[];
   chapters: ChapterDef[];
+  actors: ActorDef[];
+  steps: StepDef[];
   /** KIT_* roots available in the model library (filled by tools; absent in the runtime). */
   modelNames?: string[];
 }

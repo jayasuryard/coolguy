@@ -6,7 +6,13 @@
   "autoFloors": false,
   "waterLevel": -1.6,
   "districts": [
-    { "id": "crown", "name": "Crown Steps", "rows": [0, 1], "floorY": 52, "color": "#dccdb4" },
+    {
+      "id": "crown",
+      "name": "Crown Steps",
+      "rows": [0, 1],
+      "floorY": 52,
+      "color": "#dccdb4"
+    },
     {
       "id": "market",
       "name": "Switchback Market",
@@ -14,20 +20,44 @@
       "floorY": 9,
       "color": "#c7b196"
     },
-    { "id": "quay", "name": "Punch Quay", "rows": [4, 5], "floorY": 0, "color": "#a69a8b" }
+    {
+      "id": "quay",
+      "name": "Punch Quay",
+      "rows": [4, 5],
+      "floorY": 0,
+      "color": "#a69a8b"
+    }
   ],
   "cells": [
     {
       "id": "cell.2.4",
       "objects": [
-        { "id": "pad.quay.tramStop", "kind": "pad", "position": [140, 0, 277] },
-        { "id": "receiver.quay.tramLamp", "kind": "receiver", "position": [143, 4.6, 280] }
+        {
+          "id": "pad.quay.tramStop",
+          "kind": "pad",
+          "position": [140, 0, 277]
+        },
+        {
+          "id": "receiver.quay.tramLamp",
+          "kind": "receiver",
+          "position": [143, 4.6, 280]
+        },
+        {
+          "id": "quay.tram",
+          "kind": "model",
+          "model": "KIT_tram_hunyuan",
+          "position": [150, 0, 290]
+        }
       ]
     },
     {
       "id": "cell.2.5",
       "objects": [
-        { "id": "pad.quay.home", "kind": "pad", "position": [130, 0, 330] },
+        {
+          "id": "pad.quay.home",
+          "kind": "pad",
+          "position": [130, 0, 330]
+        },
         {
           "id": "quay.home.amp",
           "kind": "model",
@@ -60,8 +90,16 @@
           "size": [1.3, 1.6, 0.7],
           "visual": false
         },
-        { "id": "receiver.quay.clock", "kind": "receiver", "position": [291, 1.45, 261.2] },
-        { "id": "pad.quay.lower", "kind": "pad", "position": [291, 0, 265] },
+        {
+          "id": "receiver.quay.clock",
+          "kind": "receiver",
+          "position": [291, 1.45, 261.2]
+        },
+        {
+          "id": "pad.quay.lower",
+          "kind": "pad",
+          "position": [291, 0, 265]
+        },
         {
           "id": "quay.stall.crate",
           "kind": "block",
@@ -73,7 +111,13 @@
     },
     {
       "id": "cell.3.3",
-      "objects": [{ "id": "pad.market.terminus", "kind": "pad", "position": [250, 9, 250] }]
+      "objects": [
+        {
+          "id": "pad.market.terminus",
+          "kind": "pad",
+          "position": [250, 9, 250]
+        }
+      ]
     },
     {
       "id": "cell.4.3",
@@ -85,7 +129,21 @@
           "size": [8, 6, 6],
           "color": "#5a4b6b"
         },
-        { "id": "receiver.market.press", "kind": "receiver", "position": [276, 17.5, 214] }
+        {
+          "id": "receiver.market.press",
+          "kind": "receiver",
+          "position": [276, 17.5, 214]
+        },
+        {
+          "id": "pad.market.press",
+          "kind": "pad",
+          "position": [264, 16, 216]
+        },
+        {
+          "id": "receiver.market.relay",
+          "kind": "receiver",
+          "position": [288, 18.6, 206]
+        }
       ]
     },
     {
@@ -98,8 +156,21 @@
           "size": [6, 3, 4],
           "color": "#8a6d2f"
         },
-        { "id": "receiver.crown.lathe", "kind": "receiver", "position": [300, 54, 84] },
-        { "id": "pad.crown.court", "kind": "pad", "position": [312, 52, 96] }
+        {
+          "id": "receiver.crown.lathe",
+          "kind": "receiver",
+          "position": [300, 54, 84]
+        },
+        {
+          "id": "pad.crown.court",
+          "kind": "pad",
+          "position": [312, 52, 96]
+        },
+        {
+          "id": "receiver.crown.relay",
+          "kind": "receiver",
+          "position": [318, 54.6, 104]
+        }
       ]
     }
   ]

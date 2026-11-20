@@ -12,7 +12,7 @@ import { newGameSave, type SaveData } from './platform/saveData';
 import { SaveStore } from './platform/SaveStore';
 import { loadSettings, type Settings } from './platform/settings';
 import { applySettingsToDocument } from './ui/documentSettings';
-import { CreditsMusic } from './ui/CreditsMusic';
+import { ShellAudio } from './ui/ShellAudio';
 import { CreditsRoll } from './ui/CreditsRoll';
 import { MenuNav } from './ui/menuNav';
 import { SettingsScreen } from './ui/SettingsScreen';
@@ -27,18 +27,25 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 const SCREENS: ScreenId[] = ['loading', 'menu', 'credits', 'pause', 'settings'];
 let current: ScreenId | null = 'loading';
 function show(id: ScreenId | null): void {
-  if (current === 'credits' && id !== 'credits') {
-    credits.close();
-    music.stop();
-  }
+  if (current === 'credits' && id !== 'credits') credits.close();
   current = id;
+  // Music follows the screen; Settings keeps whatever was playing behind it.
+  if (id === 'menu') void audio.play('menu');
+  else if (id === 'credits') void audio.play('credits');
+  else if (id === 'pause') void audio.play('pause');
+  else if (id === null) void audio.play(null);
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== id;
 }
 
 let settings: Settings = loadSettings();
 const credits = new CreditsRoll(() => settings.reducedMotion);
-const music = new CreditsMusic(() => settings);
-if (import.meta.env.DEV) (window as unknown as { creditsMusic: unknown }).creditsMusic = music;
+const audio = new ShellAudio(() => settings);
+if (import.meta.env.DEV) (window as unknown as { shellAudio: unknown }).shellAudio = audio;
+const menuSounds = {
+  move: (i: number) => audio.move(i),
+  select: () => audio.select(),
+  denied: () => audio.denied(),
+};
 applySettingsToDocument(settings);
 
 let store: SaveStore | null = null;
@@ -142,16 +149,19 @@ const menuButtons = [
   ...document.querySelectorAll<HTMLButtonElement>('#screen-menu .menu-list button'),
 ];
 const menuContinue = menuButtons.find((b) => b.dataset.action === 'continue')!;
-const menuNav = new MenuNav(menuButtons, (action) => {
-  if (action === 'new') void startNewGame();
-  else if (action === 'continue' && existing) void startGame(existing);
-  else if (action === 'settings') openSettings('menu');
-  else if (action === 'credits') {
-    show('credits');
-    credits.open();
-    void music.start(); // the click/Enter that opened Credits unlocks audio
-  }
-});
+const menuNav = new MenuNav(
+  menuButtons,
+  (action) => {
+    if (action === 'new') void startNewGame();
+    else if (action === 'continue' && existing) void startGame(existing);
+    else if (action === 'settings') openSettings('menu');
+    else if (action === 'credits') {
+      show('credits');
+      credits.open();
+    }
+  },
+  menuSounds,
+);
 
 async function startNewGame(): Promise<void> {
   let save = newGameSave(CONTENT_VERSION, CONTENT.world.spawnPad);
@@ -187,7 +197,15 @@ async function startGame(save: SaveData): Promise<void> {
       settings,
       saveStore: store,
       save,
-      ui: { onPause: showPause, onResume: () => show(null) },
+      ui: {
+        onPause: showPause,
+        onResume: () => show(null),
+        onEnding: () => {
+          game?.endSession();
+          show('credits');
+          credits.open();
+        },
+      },
     },
     preloaded,
   );
@@ -207,17 +225,21 @@ async function startGame(save: SaveData): Promise<void> {
 const pauseButtons = [
   ...document.querySelectorAll<HTMLButtonElement>('#screen-pause .menu-list button'),
 ];
-const pauseNav = new MenuNav(pauseButtons, (action) => {
-  if (!game) return;
-  if (action === 'resume') game.resume();
-  else if (action === 'restart') {
-    void game.restartCheckpoint().then((ok) => {
-      if (ok) game?.resume();
-      else $('pause-reason').textContent = 'No checkpoint saved yet.';
-    });
-  } else if (action === 'settings') openSettings('pause');
-  else if (action === 'menu') location.reload(); // progress is kept at checkpoints
-});
+const pauseNav = new MenuNav(
+  pauseButtons,
+  (action) => {
+    if (!game) return;
+    if (action === 'resume') game.resume();
+    else if (action === 'restart') {
+      void game.restartCheckpoint().then((ok) => {
+        if (ok) game?.resume();
+        else $('pause-reason').textContent = 'No checkpoint saved yet.';
+      });
+    } else if (action === 'settings') openSettings('pause');
+    else if (action === 'menu') location.reload(); // progress is kept at checkpoints
+  },
+  menuSounds,
+);
 pauseButtons.find((b) => b.dataset.action === 'restart')!.disabled = false;
 
 function showPause(reason: string): void {
@@ -228,6 +250,7 @@ function showPause(reason: string): void {
   $('pause-objective').textContent = st.objective;
   $('pause-reason').textContent = reason === 'Paused.' ? '' : reason;
   $('screen-pause').classList.add('live');
+  if (current !== 'pause' && current !== 'settings') audio.pauseIn();
   if (current !== 'settings') {
     show('pause');
     pauseNav.reset();
@@ -240,12 +263,21 @@ const settingsScreen = new SettingsScreen(
   (s) => {
     settings = s;
     applySettingsToDocument(s);
-    music.refreshVolume();
+    audio.refresh();
     game?.applySettings(s);
   },
   () => {
     show(settingsReturn);
     (settingsReturn === 'pause' ? pauseNav : menuNav).reset();
+  },
+  {
+    move: (i) => audio.move(i),
+    tab: () => audio.tab(),
+    slide: (v) => audio.slide(v),
+    toggle: (on) => audio.toggle(on),
+    select: () => audio.select(),
+    confirm: () => audio.confirm(),
+    back: () => audio.back(),
   },
 );
 function openSettings(from: ScreenId): void {
@@ -264,12 +296,18 @@ window.addEventListener(
     if (current === 'menu') handled = menuNav.handleKey(e);
     else if (current === 'credits') {
       if (e.key === 'Escape' || e.key === 'Enter' || e.key === 'Backspace') {
+        audio.back();
+        if (game) {
+          location.reload(); // after the ending: back to a fresh title screen
+          return;
+        }
         show('menu');
         menuNav.reset();
         handled = true;
       } else handled = credits.handleKey(e);
     } else if (current === 'pause') {
       if (e.key === 'Escape') {
+        audio.pauseOut();
         game?.resume();
         handled = true;
       } else handled = pauseNav.handleKey(e);
@@ -291,10 +329,7 @@ if (import.meta.env.DEV && qa && SCREENS.includes(qa)) {
   } else if (qa === 'settings') openSettings('menu');
   else if (qa === 'menu') menuNav.reset();
   else if (qa === 'loading') progress(0.68, 'Loading the quay…');
-  else if (qa === 'credits') {
-    credits.open();
-    void music.start(); // without a prior gesture this begins on the first key/click
-  }
+  else if (qa === 'credits') credits.open();
 } else {
   void boot();
 }

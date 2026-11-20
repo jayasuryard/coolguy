@@ -81,6 +81,7 @@ export function installDevPanel(game: Game, settings: Settings): void {
       'punchClockReady',
     )
     .name('Punch Clock prerequisites + go');
+  story.add({ skip: () => game.director.skip() }, 'skip').name('skip current step');
   story.add({ save: () => void game.checkpoint() }, 'save').name('save checkpoint');
   story.add(state, 'info').name('rank / facts').listen().disable();
 

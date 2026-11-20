@@ -14,6 +14,7 @@ export default defineConfig({
     },
   },
   server: { port: 5173, strictPort: true },
+  // game/viewer.html is a dev-only model viewer and is not part of the production build.
   build: {
     outDir: r('./dist'),
     emptyOutDir: true,

@@ -1,0 +1,354 @@
+[
+  {
+    "id": "l1.amp",
+    "objective": "Set up the amp on your pitch.",
+    "trigger": {
+      "type": "use",
+      "position": [132.6, 0, 329.5],
+      "label": "plug in the amp"
+    },
+    "intro": [
+      "Bellweather, last ferry of the evening.",
+      "Kit: One good set and I can pay Ione back for the tram fare."
+    ],
+    "lines": ["The amp hums awake."]
+  },
+  {
+    "id": "l1.tune",
+    "objective": "Walk to the quay edge and tune to the ferry horn.",
+    "trigger": {
+      "type": "reach",
+      "position": [139, 0, 343],
+      "radius": 3
+    },
+    "lines": [
+      "The ferry horn sounds a long, low A.",
+      "Kit: There it is. Everything on this island is in time with something.",
+      "Learned: Loose Change"
+    ],
+    "effects": {
+      "facts": ["phrase.busk"]
+    }
+  },
+  {
+    "id": "l1.play",
+    "objective": "Play for the quay: hold F, release on the bright downbeat. Three clean bars.",
+    "trigger": {
+      "type": "perform",
+      "position": [130, 0, 330],
+      "radius": 7,
+      "phrase": "busk",
+      "hits": 3
+    },
+    "lines": [
+      "Coins ring in the guitar case.",
+      "Kit: Enough for breakfast. Tram stop in the morning."
+    ],
+    "effects": {
+      "facts": ["job.1.complete"],
+      "travelTo": "pad.quay.tramStop",
+      "card": "One More Beat|Punch Quay · the next morning"
+    }
+  },
+  {
+    "id": "l2.paz",
+    "objective": "Talk to Paz by the tram stop.",
+    "trigger": {
+      "type": "talk",
+      "npc": "paz"
+    },
+    "actors": ["paz", "ione"],
+    "lines": [
+      "Paz: These steps get taller every year, busker.",
+      "Paz: Walk me to the tram door? Slowly. I am not a ferry."
+    ]
+  },
+  {
+    "id": "l2.escort",
+    "objective": "Walk Paz to the tram door. Stay close.",
+    "trigger": {
+      "type": "escort",
+      "npcs": ["paz"],
+      "position": [147, 0, 286.6],
+      "radius": 3
+    },
+    "actors": ["paz", "ione"],
+    "lines": ["Paz: You keep good time. Most people only keep their own."]
+  },
+  {
+    "id": "l2.ione",
+    "objective": "Talk to Ione, the conductor.",
+    "trigger": {
+      "type": "talk",
+      "npc": "ione"
+    },
+    "actors": ["paz", "ione"],
+    "lines": [
+      "Ione: The lamp will not let the doors close until it hears its closing chord.",
+      "Ione: Hold it until the bar comes round, then let go. Like this.",
+      "Learned: Closing Call"
+    ],
+    "effects": {
+      "facts": ["phrase.closing"]
+    }
+  },
+  {
+    "id": "l2.lamp",
+    "objective": "Play Closing Call into the tram lamp above the stop.",
+    "trigger": {
+      "type": "play",
+      "receiver": "receiver.quay.tramLamp",
+      "phrase": "closing"
+    },
+    "actors": ["paz", "ione"],
+    "lines": [
+      "The lamp folds from a circle into a bar. The doors sigh shut.",
+      "Ione: One more beat and we would have been late. Ride up to the market with us tonight."
+    ],
+    "effects": {
+      "facts": ["job.2.complete"],
+      "travelTo": "pad.market.terminus",
+      "card": "Last Request|Switchback Market · evening"
+    }
+  },
+  {
+    "id": "l3.mara",
+    "objective": "Find Mara at her stall.",
+    "trigger": {
+      "type": "talk",
+      "npc": "mara"
+    },
+    "actors": ["mara"],
+    "lines": [
+      "Mara: You are the one from the quay. Play me the closing one, before the lamps go.",
+      "Mara: My mother wound these clocks. Nobody asks them anything any more."
+    ]
+  },
+  {
+    "id": "l3.request",
+    "objective": "Play Mara's request in the market square. Three clean bars.",
+    "trigger": {
+      "type": "perform",
+      "position": [248, 9, 256],
+      "radius": 8,
+      "phrase": "closing",
+      "hits": 3
+    },
+    "actors": ["mara"],
+    "lines": [
+      "The whole market leans in on the last chord.",
+      "Then every lamp snaps to white. Shutters slam. Something is counting.",
+      "Mara: A raid. They are collecting the hours. Kit — my goggles!"
+    ],
+    "effects": {
+      "facts": ["job.3.complete"]
+    }
+  },
+  {
+    "id": "l4.goggles",
+    "objective": "Grab Mara's goggles from the gutter.",
+    "trigger": {
+      "type": "collect",
+      "position": [238, 9, 252],
+      "item": "goggles"
+    },
+    "actors": ["mara"],
+    "lines": [
+      "Through the lens the timetable peels back: wires, counters, a city being wound down.",
+      "Mara: Now you see it. The last tram is still at the quay. Go!"
+    ],
+    "effects": {
+      "facts": ["goggles.collected", "lens.raisedOnce"],
+      "travelTo": "pad.quay.tramStop",
+      "card": "Last Tram Out|Punch Quay · the raid"
+    }
+  },
+  {
+    "id": "l4.doors",
+    "objective": "Hold the tram doors: play Closing Call into the lamp.",
+    "trigger": {
+      "type": "play",
+      "receiver": "receiver.quay.tramLamp",
+      "phrase": "closing"
+    },
+    "actors": ["ione", "passenger.a", "passenger.b"],
+    "intro": ["Ione: The lamp is locked open. It wants them counted, not carried!"],
+    "lines": [
+      "The doors hold. The passengers scatter up the steps.",
+      "Something heavy steps onto the platform."
+    ],
+    "effects": {
+      "facts": ["rescue.tram"]
+    }
+  },
+  {
+    "id": "l4.collector",
+    "objective": "Shut down the Platform Collector. Keep your distance and land on-beat releases.",
+    "trigger": {
+      "type": "defeat",
+      "enemy": "collector"
+    },
+    "actors": ["ione", "collector"],
+    "lines": ["The Collector's counter rolls to zero and stays there."],
+    "effects": {
+      "facts": ["defeated.collector"]
+    }
+  },
+  {
+    "id": "l4.key",
+    "objective": "Talk to Ione.",
+    "trigger": {
+      "type": "talk",
+      "npc": "ione"
+    },
+    "actors": ["ione"],
+    "lines": [
+      "Ione: Route key. Opens the service landing under the viaduct.",
+      "Ione: The Punch Clock down there stamps every hour they take. Wake it up wrong."
+    ],
+    "effects": {
+      "facts": ["key.quay.lower"],
+      "travelTo": "pad.quay.lower",
+      "card": "The Punch Clock|below the viaduct"
+    }
+  },
+  {
+    "id": "l4.clock",
+    "objective": "Play Closing Call into the Punch Clock.",
+    "trigger": {
+      "type": "fact",
+      "fact": "machine.quay.clock",
+      "receiver": "receiver.quay.clock"
+    },
+    "lines": ["Kit: Backstage. The whole city has a backstage.", "Rank earned: Protector"],
+    "effects": {
+      "travelTo": "pad.market.terminus",
+      "card": "Market Under Glass|Switchback Market · shutters down"
+    }
+  },
+  {
+    "id": "l5.mara",
+    "objective": "Find Mara in the shuttered market.",
+    "trigger": {
+      "type": "talk",
+      "npc": "mara"
+    },
+    "actors": ["mara", "vendor.a", "vendor.b"],
+    "lines": [
+      "Mara: The shutters answer to a rising figure. My mother called it Shutter Rise.",
+      "Mara: Take it. And get Tolly and Wren out by the service stairs.",
+      "Learned: Shutter Rise"
+    ],
+    "effects": {
+      "facts": ["phrase.shutter"]
+    }
+  },
+  {
+    "id": "l5.escort",
+    "objective": "Lead Tolly and Wren to the service stairs.",
+    "trigger": {
+      "type": "escort",
+      "npcs": ["vendor.a", "vendor.b"],
+      "position": [234, 9, 247],
+      "radius": 3.5
+    },
+    "actors": ["mara", "vendor.a", "vendor.b"],
+    "lines": [
+      "Wren: The press is on the terrace above. That is where the counting comes from.",
+      "Tolly: Mind its champion. It hates a tune it cannot print."
+    ],
+    "effects": {
+      "facts": ["rescue.vendors"],
+      "travelTo": "pad.market.press",
+      "card": "The Roll Press|the terrace above the market"
+    }
+  },
+  {
+    "id": "l5.champion",
+    "objective": "Out-play the Press Champion.",
+    "trigger": {
+      "type": "defeat",
+      "enemy": "pressChampion"
+    },
+    "actors": ["pressChampion"],
+    "lines": ["The Champion jams on a bar it cannot finish."],
+    "effects": {
+      "facts": ["defeated.pressChampion"]
+    }
+  },
+  {
+    "id": "l5.press",
+    "objective": "Play Shutter Rise into the Roll Press.",
+    "trigger": {
+      "type": "fact",
+      "fact": "machine.market.press",
+      "receiver": "receiver.market.press"
+    },
+    "lines": [
+      "Kit: A spare beat. One the timetable never counted.",
+      "Learned: Spare Beat",
+      "Rank earned: Defender"
+    ],
+    "effects": {
+      "facts": ["phrase.spare"]
+    }
+  },
+  {
+    "id": "l6.relay1",
+    "objective": "Send the Spare Beat uphill: play it into the terrace relay.",
+    "trigger": {
+      "type": "play",
+      "receiver": "receiver.market.relay",
+      "phrase": "spare"
+    },
+    "lines": ["The beat jumps lamp to lamp, up the switchbacks."],
+    "effects": {
+      "travelTo": "pad.crown.court",
+      "card": "The Last Count|Crown Steps"
+    }
+  },
+  {
+    "id": "l6.relay2",
+    "objective": "Catch the Spare Beat at the Crown relay and pass it on.",
+    "trigger": {
+      "type": "play",
+      "receiver": "receiver.crown.relay",
+      "phrase": "spare"
+    },
+    "lines": ["The hill is holding one beat too many. The Lathe notices."],
+    "effects": {
+      "facts": ["relay.districts"]
+    }
+  },
+  {
+    "id": "l6.zero",
+    "objective": "Defeat Crown Zero.",
+    "trigger": {
+      "type": "defeat",
+      "enemy": "crownZero"
+    },
+    "actors": ["crownZero"],
+    "intro": ["Crown Zero: COUNT INCOMPLETE. RETURN THE BEAT."],
+    "lines": ["Crown Zero: …one… more…", "It winds down, mid-bar, and is only brass."],
+    "effects": {
+      "facts": ["defeated.crownZero"]
+    }
+  },
+  {
+    "id": "l6.lathe",
+    "objective": "Play the Spare Beat into the Crown Lathe.",
+    "trigger": {
+      "type": "fact",
+      "fact": "machine.crown.lathe",
+      "receiver": "receiver.crown.lathe"
+    },
+    "lines": [
+      "Mara: You gave them back a beat nobody owns.",
+      "Kit: Then it is everybody's. Same time tomorrow, on the quay.",
+      "Rank earned: City Hero"
+    ],
+    "effects": {
+      "ending": true
+    }
+  }
+]

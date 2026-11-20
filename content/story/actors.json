@@ -1,0 +1,81 @@
+[
+  {
+    "id": "paz",
+    "name": "Paz",
+    "kind": "npc",
+    "position": [136, 0, 272],
+    "color": "#c9773a"
+  },
+  {
+    "id": "ione",
+    "name": "Ione",
+    "kind": "npc",
+    "position": [144, 0, 286],
+    "color": "#2f6f8f"
+  },
+  {
+    "id": "mara",
+    "name": "Mara",
+    "kind": "npc",
+    "position": [258, 9, 256],
+    "color": "#b8436a"
+  },
+  {
+    "id": "passenger.a",
+    "name": "Passenger",
+    "kind": "npc",
+    "position": [149, 0, 286.5],
+    "color": "#8d8f6a"
+  },
+  {
+    "id": "passenger.b",
+    "name": "Passenger",
+    "kind": "npc",
+    "position": [152, 0, 286.5],
+    "color": "#6f5a86"
+  },
+  {
+    "id": "vendor.a",
+    "name": "Tolly",
+    "kind": "npc",
+    "position": [240, 9, 258],
+    "color": "#d2a23c"
+  },
+  {
+    "id": "vendor.b",
+    "name": "Wren",
+    "kind": "npc",
+    "position": [245, 9, 262],
+    "color": "#4f9a78"
+  },
+  {
+    "id": "collector",
+    "name": "Platform Collector",
+    "kind": "enemy",
+    "position": [157, 0, 272],
+    "color": "#7c8794",
+    "hp": 3,
+    "speed": 2.3,
+    "scale": 1.25
+  },
+  {
+    "id": "pressChampion",
+    "name": "Press Champion",
+    "kind": "enemy",
+    "position": [288, 16, 210],
+    "color": "#6a4f8c",
+    "hp": 4,
+    "speed": 2.6,
+    "scale": 1.5
+  },
+  {
+    "id": "crownZero",
+    "name": "Crown Zero",
+    "kind": "enemy",
+    "position": [298, 52, 102],
+    "color": "#c9a13a",
+    "hp": 6,
+    "speed": 2.9,
+    "scale": 1.9
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "id": "mission.market.press",
+  "version": "backstage",
+  "pad": "pad.market.press",
+  "requires": ["rescue.vendors", "defeated.pressChampion", "phrase.shutter"],
+  "trigger": {
+    "event": "phraseReleased",
+    "receiver": "receiver.market.press",
+    "phrase": "shutter"
+  },
+  "effects": {
+    "facts": ["machine.market.press"],
+    "unlockVersions": ["keepsake"],
+    "activateVersion": "keepsake",
+    "returnPad": "pad.market.press"
+  },
+  "feedback": [
+    "The Roll Press shudders awake",
+    "Shutters roll up along the market",
+    "A spare beat drops out of the print run"
+  ]
+}

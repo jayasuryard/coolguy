@@ -1,4 +1,4 @@
-import type { ContentBundle, MissionDef, VersionId } from '@content/types';
+import type { ContentBundle, MissionDef, StepDef, VersionId } from '@content/types';
 import type { DomainEvent } from '../sim/events';
 
 /**
@@ -47,6 +47,20 @@ export class StoryState {
   get currentChapter() {
     const list = this.content.chapters;
     return list.find((c) => !this.facts.has(c.completeFact)) ?? list[list.length - 1];
+  }
+
+  /** The campaign objective in play: the first step whose `step.<id>` fact is missing. */
+  get currentStep(): StepDef | null {
+    return this.content.steps.find((s) => !this.facts.has(`step.${s.id}`)) ?? null;
+  }
+
+  /** Finish the current step and commit its facts. False if `step` is not the current one. */
+  completeStep(step: StepDef): boolean {
+    if (this.currentStep !== step) return false;
+    this.facts.add(`step.${step.id}`);
+    step.effects?.facts?.forEach((f) => this.facts.add(f));
+    if (step.effects?.travelTo) this.lastSafePad = step.effects.travelTo;
+    return true;
   }
 
   get learnedPhrases(): string[] {

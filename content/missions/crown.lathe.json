@@ -1,0 +1,22 @@
+{
+  "id": "mission.crown.lathe",
+  "version": "keepsake",
+  "pad": "pad.crown.court",
+  "requires": ["relay.districts", "defeated.crownZero", "phrase.spare"],
+  "trigger": {
+    "event": "phraseReleased",
+    "receiver": "receiver.crown.lathe",
+    "phrase": "spare"
+  },
+  "effects": {
+    "facts": ["machine.crown.lathe"],
+    "unlockVersions": ["openScore"],
+    "activateVersion": "openScore",
+    "returnPad": "pad.crown.court"
+  },
+  "feedback": [
+    "The Crown Lathe turns",
+    "Every clock in Bellweather skips one beat — and keeps it",
+    "The score is open"
+  ]
+}

@@ -2,6 +2,17 @@ import { DEFAULT_BINDINGS, type Action } from '../input/actions';
 import { DEFAULT_SETTINGS, saveSettings, type Settings } from '../platform/settings';
 
 type Tab = 'display' | 'audio' | 'controls' | 'accessibility';
+
+/** UI sound hooks (see ShellAudio). */
+export interface SettingsSounds {
+  move(index: number): void;
+  tab(): void;
+  slide(value: number): void;
+  toggle(on: boolean): void;
+  select(): void;
+  confirm(): void;
+  back(): void;
+}
 type Key = keyof Settings;
 
 type Field =
@@ -179,10 +190,14 @@ export class SettingsScreen {
     private current: Settings,
     private readonly onApply: (s: Settings) => void,
     private readonly onBack: () => void,
+    private readonly sounds?: SettingsSounds,
   ) {
     this.draft = structuredClone(current);
     this.tabButtons.forEach((b) =>
-      b.addEventListener('click', () => this.showTab(b.dataset.tab as Tab)),
+      b.addEventListener('click', () => {
+        this.sounds?.tab();
+        this.showTab(b.dataset.tab as Tab);
+      }),
     );
     document.getElementById('btn-apply')!.addEventListener('click', () => this.apply());
     document.getElementById('btn-reset')!.addEventListener('click', () => this.reset());
@@ -199,19 +214,26 @@ export class SettingsScreen {
   handleKey(e: KeyboardEvent): boolean {
     if (this.listening) {
       e.preventDefault();
-      if (e.key !== 'Escape') this.bind(this.listening.action, e.code);
+      if (e.key !== 'Escape') {
+        this.bind(this.listening.action, e.code);
+        this.sounds?.confirm();
+      } else this.sounds?.back();
       this.listening.el.classList.remove('listening');
       this.listening = null;
       this.render();
       return true;
     }
     if (e.key === 'Escape') {
+      this.sounds?.back();
       this.onBack();
     } else if (e.code === 'KeyQ' || e.code === 'KeyE') {
       const i = TAB_ORDER.indexOf(this.tab) + (e.code === 'KeyE' ? 1 : -1);
+      this.sounds?.tab();
       this.showTab(TAB_ORDER[(i + TAB_ORDER.length) % TAB_ORDER.length]!);
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const before = this.focus;
       this.setFocus(this.focus + (e.key === 'ArrowDown' ? 1 : -1));
+      if (this.focus !== before) this.sounds?.move(this.focus);
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       const row = this.rows[this.focus];
       if (row?.dataset.index !== undefined)
@@ -265,9 +287,14 @@ export class SettingsScreen {
           input.style.setProperty('--pct', `${((n - f.min) / (f.max - f.min)) * 100}%`);
           out.textContent = f.fmt(n);
         };
+        let lastTick = 0;
         input.addEventListener('input', () => {
           (this.draft as unknown as Record<string, unknown>)[f.key] = Number(input.value);
           paint();
+          if (performance.now() - lastTick > 60) {
+            lastTick = performance.now();
+            this.sounds?.slide((Number(input.value) - f.min) / (f.max - f.min));
+          }
         });
         paint();
         row.append(input, out);
@@ -294,6 +321,7 @@ export class SettingsScreen {
         btn.className = 'binding';
         btn.textContent = this.keyboardCodes(f.action).map(keyName).join(' / ') || '—';
         btn.addEventListener('click', () => {
+          this.sounds?.select();
           this.listening = { action: f.action, el: btn };
           btn.classList.add('listening');
           btn.textContent = 'Press a key…';
@@ -319,11 +347,13 @@ export class SettingsScreen {
     if (f.kind === 'range') {
       const v = Math.min(f.max, Math.max(f.min, (d[f.key] as number) + dir * f.step));
       d[f.key] = Math.round(v / f.step) * f.step;
+      this.sounds?.slide(((d[f.key] as number) - f.min) / (f.max - f.min));
     } else if (f.kind === 'choice') {
       const idx = f.options.findIndex((o) => o.value === d[f.key]);
       const n = f.options.length;
       const next = cycle ? (idx + 1) % n : Math.min(n - 1, Math.max(0, idx + dir));
       d[f.key] = f.options[next]!.value;
+      this.sounds?.toggle(next >= idx);
     } else {
       this.rows[i]?.querySelector('button')?.click();
       return;
@@ -350,12 +380,14 @@ export class SettingsScreen {
   private apply(): void {
     this.current = structuredClone(this.draft);
     const ok = saveSettings(this.current);
+    this.sounds?.confirm();
     this.onApply(this.current);
     this.note.textContent = ok ? 'Saved.' : 'Applied for this session (storage unavailable).';
   }
 
   private reset(): void {
     this.draft = structuredClone(DEFAULT_SETTINGS);
+    this.sounds?.toggle(false);
     this.render();
     this.note.textContent = 'Defaults restored — Apply to keep them.';
   }

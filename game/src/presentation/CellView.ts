@@ -133,9 +133,12 @@ export class CellView implements CellSink {
       const mat = mesh.material as THREE.Material;
       const src = mesh.geometry;
       const g = new THREE.BufferGeometry();
-      g.setAttribute('position', src.getAttribute('position').clone());
+      g.setAttribute('position', toFloat(src.getAttribute('position')));
       const normal = src.getAttribute('normal');
-      if (normal) g.setAttribute('normal', normal.clone());
+      if (normal) g.setAttribute('normal', toFloat(normal));
+      // textured kit pieces (e.g. the Hunyuan tram) need their UVs through the merge
+      const uv = src.getAttribute('uv');
+      if (uv) g.setAttribute('uv', toFloat(uv));
       if (src.index) g.setIndex(src.index.clone());
       const flat = g.index ? g.toNonIndexed() : g;
       if (flat !== g) g.dispose();
@@ -159,4 +162,17 @@ export class CellView implements CellSink {
     }
     return out;
   }
+}
+
+/**
+ * Float copy of an attribute. Meshopt-quantized GLBs store positions/normals/UVs as normalized
+ * integers; baking a world matrix into those would clamp everything to [-1, 1].
+ */
+function toFloat(
+  a: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+): THREE.BufferAttribute {
+  const out = new Float32Array(a.count * a.itemSize);
+  for (let i = 0; i < a.count; i++)
+    for (let k = 0; k < a.itemSize; k++) out[i * a.itemSize + k] = a.getComponent(i, k);
+  return new THREE.BufferAttribute(out, a.itemSize);
 }

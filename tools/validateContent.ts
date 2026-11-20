@@ -146,5 +146,57 @@ export function validateContent(c: ContentBundle): string[] {
     }
   }
 
+  // ---- campaign steps ----
+  const actorIds = new Map(c.actors.map((a) => [a.id, a]));
+  if (actorIds.size !== c.actors.length) err('duplicate actor id');
+  const stepIds = new Set<string>();
+  const granted = new Set<string>();
+  for (const st of c.steps) {
+    if (stepIds.has(st.id)) err(`duplicate step "${st.id}"`);
+    stepIds.add(st.id);
+    const where = `step ${st.id}`;
+    const needActor = (id: string, kind: 'npc' | 'enemy') => {
+      const a = actorIds.get(id);
+      if (!a) err(`${where}: unknown actor "${id}"`);
+      else if (a.kind !== kind) err(`${where}: actor "${id}" is not a ${kind}`);
+      else if (!(st.actors ?? []).includes(id)) err(`${where}: actor "${id}" is not on stage`);
+    };
+    for (const a of st.actors ?? []) if (!actorIds.has(a)) err(`${where}: unknown actor "${a}"`);
+    const t = st.trigger;
+    if (t.type === 'talk') needActor(t.npc, 'npc');
+    if (t.type === 'defeat') needActor(t.enemy, 'enemy');
+    if (t.type === 'escort') t.npcs.forEach((n) => needActor(n, 'npc'));
+    if (t.type === 'perform' || t.type === 'play') {
+      const ph = c.phrases.find((p) => p.id === t.phrase);
+      if (!ph) err(`${where}: unknown phrase "${t.phrase}"`);
+      else if (!granted.has(ph.fact)) err(`${where}: phrase "${t.phrase}" is not learned yet`);
+    }
+    if ((t.type === 'play' || t.type === 'fact') && !isKind(t.receiver, 'receiver')) {
+      err(`${where}: "${t.receiver}" is not a receiver`);
+    }
+    if (t.type === 'fact') {
+      needFact(where, t.fact);
+      const m = c.missions.find((x) => x.effects.facts.includes(t.fact));
+      if (!m) err(`${where}: no mission grants "${t.fact}"`);
+      else {
+        for (const f of m.requires) {
+          if (!granted.has(f)) err(`${where}: ${m.id} needs "${f}", which no earlier step grants`);
+        }
+        m.effects.facts.forEach((f) => granted.add(f));
+      }
+    }
+    for (const f of st.effects?.facts ?? []) {
+      needFact(where, f);
+      granted.add(f);
+    }
+    if (st.effects?.travelTo && !isKind(st.effects.travelTo, 'pad')) {
+      err(`${where}: travelTo "${st.effects.travelTo}" is not a pad`);
+    }
+  }
+  for (const f of facts) if (!granted.has(f)) err(`fact "${f}" is never granted by the campaign`);
+  for (const ch of c.chapters) {
+    if (!granted.has(ch.completeFact)) err(`${ch.id}: "${ch.completeFact}" is never granted`);
+  }
+
   return errors;
 }

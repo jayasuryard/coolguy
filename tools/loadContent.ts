@@ -34,6 +34,8 @@ export function loadContent(root: string, modelDir?: string): ContentBundle {
     ranks: read('story', 'ranks.json'),
     phrases: read('story', 'phrases.json'),
     chapters: read('story', 'chapters.json'),
+    actors: read('story', 'actors.json'),
+    steps: read('story', 'steps.json'),
     missions: readdirSync(missionDir)
       .filter((f) => f.endsWith('.json'))
       .sort()

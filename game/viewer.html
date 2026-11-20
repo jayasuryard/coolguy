@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>coolguy · model viewer (dev)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #1a1f1d;
+        color: #f4ead8;
+        font:
+          13px ui-monospace,
+          monospace;
+      }
+      #views {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        height: 100%;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #info {
+        position: fixed;
+        left: 8px;
+        top: 6px;
+      }
+      .label {
+        position: absolute;
+        top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="info">loading…</p>
+    <div id="views"></div>
+    <script type="module" src="/src/dev/viewer.ts"></script>
+  </body>
+</html>

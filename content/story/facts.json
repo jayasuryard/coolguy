@@ -1,20 +1,78 @@
 [
-  { "id": "job.1.complete", "description": "Loose Change: first busking set finished" },
-  { "id": "job.2.complete", "description": "One More Beat: breakfast run finished" },
-  { "id": "job.3.complete", "description": "Last Request: Mara's request played" },
-  { "id": "goggles.collected", "description": "Mara's goggles picked up from the gutter" },
-  { "id": "lens.raisedOnce", "description": "Raid View seen for the first time" },
-  { "id": "phrase.closing", "description": "Closing Call learned" },
-  { "id": "phrase.shutter", "description": "Shutter Rise learned" },
-  { "id": "phrase.spare", "description": "Spare Beat recovered" },
-  { "id": "rescue.tram", "description": "Tram passengers evacuated" },
-  { "id": "defeated.collector", "description": "Platform collector defeated" },
-  { "id": "key.quay.lower", "description": "Ione's route key received" },
-  { "id": "machine.quay.clock", "description": "Punch Clock activated" },
-  { "id": "rescue.vendors", "description": "Stallholders escorted out" },
-  { "id": "defeated.pressChampion", "description": "Press champion defeated" },
-  { "id": "machine.market.press", "description": "Roll Press woken" },
-  { "id": "relay.districts", "description": "Spare Beat relayed up the hill" },
-  { "id": "defeated.crownZero", "description": "Crown Zero defeated" },
-  { "id": "machine.crown.lathe", "description": "Crown Lathe turned" }
+  {
+    "id": "phrase.busk",
+    "description": "Loose Change learned: Kit's own street riff"
+  },
+  {
+    "id": "job.1.complete",
+    "description": "Loose Change: first busking set finished"
+  },
+  {
+    "id": "job.2.complete",
+    "description": "One More Beat: breakfast run finished"
+  },
+  {
+    "id": "job.3.complete",
+    "description": "Last Request: Mara's request played"
+  },
+  {
+    "id": "goggles.collected",
+    "description": "Mara's goggles picked up from the gutter"
+  },
+  {
+    "id": "lens.raisedOnce",
+    "description": "Raid View seen for the first time"
+  },
+  {
+    "id": "phrase.closing",
+    "description": "Closing Call learned"
+  },
+  {
+    "id": "phrase.shutter",
+    "description": "Shutter Rise learned"
+  },
+  {
+    "id": "phrase.spare",
+    "description": "Spare Beat recovered"
+  },
+  {
+    "id": "rescue.tram",
+    "description": "Tram passengers evacuated"
+  },
+  {
+    "id": "defeated.collector",
+    "description": "Platform collector defeated"
+  },
+  {
+    "id": "key.quay.lower",
+    "description": "Ione's route key received"
+  },
+  {
+    "id": "machine.quay.clock",
+    "description": "Punch Clock activated"
+  },
+  {
+    "id": "rescue.vendors",
+    "description": "Stallholders escorted out"
+  },
+  {
+    "id": "defeated.pressChampion",
+    "description": "Press champion defeated"
+  },
+  {
+    "id": "machine.market.press",
+    "description": "Roll Press woken"
+  },
+  {
+    "id": "relay.districts",
+    "description": "Spare Beat relayed up the hill"
+  },
+  {
+    "id": "defeated.crownZero",
+    "description": "Crown Zero defeated"
+  },
+  {
+    "id": "machine.crown.lathe",
+    "description": "Crown Lathe turned"
+  }
 ]

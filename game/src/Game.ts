@@ -1,6 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { PadDef, VersionId } from '@content/types';
+import type { PadDef, StepDef, VersionId } from '@content/types';
 import * as THREE from 'three';
+import { Guitar } from './audio/Guitar';
 import { CONFIG } from './config';
 import { CONTENT, CONTENT_VERSION } from './content';
 import { InputSystem } from './input/InputSystem';
@@ -15,6 +16,7 @@ import { CellView } from './presentation/CellView';
 import { Environment } from './presentation/Environment';
 import { Hud } from './presentation/Hud';
 import { KitView } from './presentation/KitView';
+import { Stage } from './presentation/Stage';
 import { EventBus, type DomainEvent } from './sim/events';
 import { FixedStepLoop } from './sim/FixedStepLoop';
 import type { KitIntent } from './sim/Kit';
@@ -22,6 +24,7 @@ import { PhrasePerformer } from './sim/PhrasePerformer';
 import { Simulation } from './sim/Simulation';
 import { CellStreamer } from './story/CellStreamer';
 import { findObject } from './story/cells';
+import { Director } from './story/Director';
 import { StoryState } from './story/StoryState';
 import { AudioTimeSource, SilentTimeSource, Transport, scheduleClick } from './transport/Transport';
 
@@ -29,6 +32,8 @@ import { AudioTimeSource, SilentTimeSource, Transport, scheduleClick } from './t
 export interface GameUi {
   onPause(reason: string): void;
   onResume(): void;
+  /** The campaign is finished: roll the credits. */
+  onEnding(): void;
 }
 
 export interface GameOptions {
@@ -48,6 +53,7 @@ export interface Preloaded {
 /** Progress callback: fraction 0–1 and a short status line. */
 export type LoadProgress = (fraction: number, status: string) => void;
 
+const FREE_PLAY = 'Bellweather keeps its own time now. Play anywhere.';
 const INTERACT_RANGE = 5;
 const INTERACT_CONE = Math.cos((70 * Math.PI) / 180);
 
@@ -68,6 +74,7 @@ export class Game {
   readonly cellView: CellView;
   readonly hud = new Hud();
   readonly bus = new EventBus();
+  readonly director: Director;
 
   /** Dev toggles. */
   noclip = false;
@@ -78,6 +85,15 @@ export class Game {
   private readonly kitView: KitView;
   private readonly rig: CameraRig;
   private readonly performer: PhrasePerformer;
+  private readonly stage: Stage;
+  private readonly guitar: Guitar | null;
+  /** A finished step waiting for its lines to play out before the cut. */
+  private pendingCut: StepDef | null = null;
+  private quiet = 0;
+  private lastStepId: string | null = null;
+  private ended = false;
+  private saving: Promise<void> = Promise.resolve();
+  private learnedCount = 0;
   private settings: Settings;
   private readonly ui: GameUi;
   private readonly saveStore: SaveStore | null;
@@ -228,6 +244,17 @@ export class Game {
       });
     }
     this.performer = new PhrasePerformer(this.transport);
+    this.guitar = opts.audio
+      ? new Guitar(opts.audio, () => this.settings.musicVolume * this.settings.masterVolume)
+      : null;
+    this.stage = new Stage(this.scene);
+    this.director = new Director(CONTENT, this.story, {
+      groundY: (x, z, nearY) => this.sim.groundY(x, z, nearY),
+      say: (lines) => this.hud.say(lines),
+      cue: (kind) => this.guitar?.cue(kind),
+      caught: () => this.teleportToPad(this.story.lastSafePad),
+      stepCompleted: (step) => this.onStepCompleted(step),
+    });
     this.bus.on((e) => this.onDomainEvent(e));
 
     // ---- platform: focus / visibility ----
@@ -276,8 +303,9 @@ export class Game {
   /** District, chapter and objective for the pause screen. */
   status(): { district: string; chapter: string; objective: string } {
     const ch = this.story.currentChapter;
+    const step = this.story.currentStep;
     const district = CONTENT.world.districts.find((d) => d.id === ch?.district)?.name ?? '';
-    return { district, chapter: ch?.title ?? '', objective: ch?.objective ?? '' };
+    return { district, chapter: ch?.title ?? '', objective: step?.objective ?? FREE_PLAY };
   }
 
   /** Reload the last committed checkpoint (story + position). */
@@ -293,6 +321,8 @@ export class Game {
     });
     this.revision = loaded.save.revision;
     this.afterStoryChange(before);
+    this.pendingCut = null;
+    this.director.reset();
     this.teleportToPad(this.story.lastSafePad);
     return true;
   }
@@ -331,6 +361,9 @@ export class Game {
 
       const k = this.sim.kit.curr;
       this.streamer.update(k.x, k.z, this.story.activeVersion);
+      const interact = !this.noclip && !!this.input.consume('interact', 'pressed');
+      if (this.pendingCut) this.advanceCut(dt);
+      else this.director.update(dt, k, interact);
       this.kitView.update(this.sim.kit, alpha, dt, this.performer.strumming);
       const mouse = this.input.takeMouseDelta();
       this.rig.update(dt, this.kitView.position, {
@@ -379,6 +412,7 @@ export class Game {
     const press = this.input.consume('play', 'pressed');
     const release = this.input.consume('play', 'released');
     const phrase = learned[this.selectedPhrase];
+    if (press && phrase && !this.performer.strumming) this.guitar?.mute();
     if (!phrase) {
       if (press) this.hud.caption('Kit hasn’t learned a phrase yet.');
       return;
@@ -391,6 +425,7 @@ export class Game {
     });
     if (!result) return;
 
+    this.guitar?.release(phrase, result.judgement === 'hit');
     const ms = Math.round(Math.abs(result.offsetMs));
     this.hud.flashJudgement(
       result.judgement === 'hit'
@@ -443,7 +478,22 @@ export class Game {
     const phrase = CONTENT.phrases.find((p) => p.id === phraseId);
     this.hud.setPhrase(phrase?.name ?? null, this.performer.strumming);
 
-    if (this.focusedReceiver) {
+    const k = this.sim.kit.curr;
+    const step = this.pendingCut ? null : this.director.step;
+    const tgt = this.director.target;
+    this.hud.setObjective(
+      this.story.currentChapter?.title ?? '',
+      this.pendingCut ? null : (step?.objective ?? FREE_PLAY),
+      step && tgt ? Math.hypot(tgt.x - k.x, tgt.z - k.z) : null,
+    );
+    const foe = this.pendingCut ? null : this.director.enemy;
+    this.hud.setEnemy(foe ? foe.def.name : null, foe?.hp, foe?.def.hp);
+    this.stage.sync(this.director, dt, beat, this.kitView.position);
+    this.followStepPhrase();
+
+    if (this.director.prompt && !this.pendingCut) {
+      this.hud.setPrompt(this.director.prompt);
+    } else if (this.focusedReceiver) {
       const name = this.focusedReceiver.split('.').slice(1).join(' ');
       this.hud.setPrompt(
         phrase
@@ -461,10 +511,70 @@ export class Game {
   private onDomainEvent(e: DomainEvent): void {
     const versionBefore = this.story.activeVersion;
     const completed = this.story.handle(e);
-    if (!completed.length) return;
-    for (const m of completed) m.feedback.forEach((line) => this.hud.caption(line));
-    this.afterStoryChange(versionBefore);
+    if (completed.length) {
+      for (const m of completed) this.hud.say(m.feedback);
+      this.afterStoryChange(versionBefore);
+      void this.checkpoint();
+    }
+    if (e.type === 'phraseReleased') this.director.onPhrase(e, this.sim.kit.curr);
+  }
+
+  /** A campaign step finished: save, and line up its cut (travel card or ending) if it has one. */
+  private onStepCompleted(step: StepDef): void {
+    this.hud.setRank(this.story.rank.title);
+    if (step.effects?.travelTo || step.effects?.ending) {
+      this.pendingCut = step;
+      this.quiet = 0;
+    }
     void this.checkpoint();
+  }
+
+  /** Let the step's closing lines finish, then fade to the card and move Kit (or end the game). */
+  private advanceCut(dt: number): void {
+    this.quiet = this.hud.speaking ? 0 : this.quiet + dt;
+    if (this.quiet < 2.4) return;
+    const fx = this.pendingCut!.effects!;
+    this.quiet = -Infinity; // fire once; cleared when the card is opaque
+    if (fx.ending) {
+      this.hud.showCard('Bellweather', 'keeps its own time', () => this.ui.onEnding(), 2200);
+      return;
+    }
+    const [title = '', sub = ''] = (fx.card ?? '').split('|');
+    this.hud.showCard(title, sub, () => {
+      this.teleportToPad(fx.travelTo!);
+      this.rig.recenterBehind(this.sim.kit.facing);
+      this.pendingCut = null;
+    });
+  }
+
+  /** Select the phrase the current step asks for, and any phrase Kit has just learned. */
+  private followStepPhrase(): void {
+    const learned = this.story.learnedPhrases;
+    const step = this.director.step;
+    if (learned.length !== this.learnedCount) {
+      this.learnedCount = learned.length;
+      this.selectedPhrase = learned.length - 1;
+    }
+    if (!step || step.id === this.lastStepId) return;
+    this.lastStepId = step.id;
+    const t = step.trigger;
+    const wanted =
+      t.type === 'perform' || t.type === 'play'
+        ? t.phrase
+        : t.type === 'fact'
+          ? CONTENT.missions.find((m) => m.effects.facts.includes(t.fact))?.trigger.phrase
+          : undefined;
+    const i = wanted ? learned.indexOf(wanted) : -1;
+    if (i >= 0) this.selectedPhrase = i;
+  }
+
+  /** Stop simulating for good (the credits take over). */
+  endSession(): void {
+    this.ended = true;
+    this.loop.pause();
+    this.transport.pause();
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.hud.show(false);
   }
 
   /** Apply a version change and refresh HUD after any story mutation. */
@@ -499,7 +609,13 @@ export class Game {
     };
   }
 
-  async checkpoint(): Promise<void> {
+  /** Commit a checkpoint. Calls are queued so two saves never race on the same revision. */
+  checkpoint(): Promise<void> {
+    this.saving = this.saving.then(() => this.commitCheckpoint());
+    return this.saving;
+  }
+
+  private async commitCheckpoint(): Promise<void> {
     if (!this.saveStore) return;
     try {
       const saved = await this.saveStore.commit(this.buildSave(), this.revision);
@@ -539,6 +655,7 @@ export class Game {
   }
 
   pause(reason: string): void {
+    if (this.ended) return;
     if (this.loop.paused) return this.ui.onPause(reason);
     this.loop.pause();
     this.transport.pause();
@@ -550,7 +667,7 @@ export class Game {
 
   /** Resume needs a user gesture (restores audio + pointer). Counts in one bar. */
   resume(): void {
-    if (!this.loop.paused) return;
+    if (!this.loop.paused || this.ended) return;
     this.input.consume('pause', 'pressed'); // the key that opened Pause must not re-pause
     this.loop.resume();
     void this.transport.resume();
