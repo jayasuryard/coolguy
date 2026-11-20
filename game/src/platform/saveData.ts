@@ -12,9 +12,11 @@ export interface SaveData {
   questFacts: string[];
   completedStories: string[];
   endingChoice: string | null;
+  /** Loose change earned busking and fighting. */
+  coins: number;
 }
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const isStrArr = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((x) => typeof x === 'string');
@@ -40,6 +42,7 @@ export function validateSave(d: unknown): string[] {
   if (!isStrArr(s.questFacts)) p.push('questFacts');
   if (!isStrArr(s.completedStories)) p.push('completedStories');
   if (s.endingChoice !== null && typeof s.endingChoice !== 'string') p.push('endingChoice');
+  if (typeof s.coins !== 'number' || s.coins < 0) p.push('coins');
   return p;
 }
 
@@ -49,7 +52,10 @@ type Migration = (old: Record<string, unknown>) => Record<string, unknown>;
  * migrations[n] upgrades schema n → n+1. Add one per schema bump; never edit old ones.
  * Fixtures in fixtures/saves/ must keep loading through this chain.
  */
-const migrations: Record<number, Migration> = {};
+const migrations: Record<number, Migration> = {
+  // v2: money
+  1: (old) => ({ ...old, schemaVersion: 2, coins: 0 }),
+};
 
 export function migrateSave(raw: unknown): SaveData {
   let d = { ...(raw as Record<string, unknown>) };
@@ -80,5 +86,6 @@ export function newGameSave(contentVersion: string, spawnPad: string): SaveData 
     questFacts: [],
     completedStories: [],
     endingChoice: null,
+    coins: 0,
   };
 }

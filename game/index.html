@@ -377,8 +377,44 @@
         <span id="hud-phrase"></span>
         <span id="hud-judge" role="status"></span>
       </div>
+      <div id="hud-tracker">
+        <canvas id="minimap" aria-label="Map tracker"></canvas>
+        <div id="hud-stats">
+          <p id="hud-district"></p>
+          <p id="hud-clock"></p>
+          <div id="hud-hearts" role="img" aria-label="Health"></div>
+          <p id="hud-coins"><i aria-hidden="true"></i><span>0</span></p>
+          <p id="hud-keys">
+            <kbd>M</kbd> Map <kbd>G</kbd> Goggles <kbd>T</kbd> +1 hour <kbd>Y</kbd> Weather
+          </p>
+        </div>
+      </div>
+      <div id="hud-hurt" aria-hidden="true"></div>
       <p id="save-status" role="status"></p>
       <p id="dev-line"></p>
+    </section>
+
+    <div id="lens" hidden aria-hidden="true">
+      <div id="lens-mask"></div>
+      <p id="lens-tag">Raid view</p>
+      <div id="lens-reticle" hidden><i></i><span></span></div>
+    </div>
+
+    <section id="map-screen" hidden aria-label="Map of Bellweather">
+      <canvas id="map-canvas"></canvas>
+      <div id="map-panel">
+        <p class="map-eyebrow">Bellweather</p>
+        <h2 id="map-district"></h2>
+        <p id="map-chapter"></p>
+        <p id="map-objective"></p>
+        <ul id="map-legend">
+          <li><i class="you"></i>Kit</li>
+          <li><i class="objective"></i>Objective</li>
+          <li><i class="resident"></i>Residents</li>
+          <li><i class="enemy"></i>Machines</li>
+        </ul>
+        <p id="map-hints"><kbd>M</kbd> / <kbd>Esc</kbd> Close · Wheel zoom · Drag pan</p>
+      </div>
     </section>
 
     <div id="story-card" hidden>

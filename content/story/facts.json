@@ -74,5 +74,9 @@
   {
     "id": "machine.crown.lathe",
     "description": "Crown Lathe turned"
+  },
+  {
+    "id": "job.7.complete",
+    "description": "Seaglass Session: first set on the mainland"
   }
 ]

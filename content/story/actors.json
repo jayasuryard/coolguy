@@ -4,49 +4,67 @@
     "name": "Paz",
     "kind": "npc",
     "position": [136, 0, 272],
-    "color": "#c9773a"
+    "color": "#c9773a",
+    "model": "abe",
+    "height": 1.62
   },
   {
     "id": "ione",
     "name": "Ione",
     "kind": "npc",
     "position": [144, 0, 286],
-    "color": "#2f6f8f"
+    "color": "#2f6f8f",
+    "model": "ch07",
+    "height": 1.7,
+    "gait": "walkF"
   },
   {
     "id": "mara",
     "name": "Mara",
     "kind": "npc",
     "position": [258, 9, 256],
-    "color": "#b8436a"
+    "color": "#b8436a",
+    "model": "eve",
+    "height": 1.68,
+    "gait": "walkF"
   },
   {
     "id": "passenger.a",
     "name": "Passenger",
     "kind": "npc",
     "position": [149, 0, 286.5],
-    "color": "#8d8f6a"
+    "color": "#8d8f6a",
+    "model": "kate",
+    "height": 1.7,
+    "gait": "walkF"
   },
   {
     "id": "passenger.b",
     "name": "Passenger",
     "kind": "npc",
     "position": [152, 0, 286.5],
-    "color": "#6f5a86"
+    "color": "#6f5a86",
+    "model": "remy",
+    "height": 1.76
   },
   {
     "id": "vendor.a",
     "name": "Tolly",
     "kind": "npc",
     "position": [240, 9, 258],
-    "color": "#d2a23c"
+    "color": "#d2a23c",
+    "model": "the_boss",
+    "height": 1.66
   },
   {
     "id": "vendor.b",
     "name": "Wren",
     "kind": "npc",
     "position": [245, 9, 262],
-    "color": "#4f9a78"
+    "color": "#4f9a78",
+    "model": "peasant_girl",
+    "height": 1.64,
+    "gait": "walkF"
   },
   {
     "id": "collector",
@@ -56,7 +74,10 @@
     "color": "#7c8794",
     "hp": 3,
     "speed": 2.3,
-    "scale": 1.25
+    "scale": 1.25,
+    "model": "vanguard",
+    "height": 2.25,
+    "tint": "#f3efe6"
   },
   {
     "id": "pressChampion",
@@ -66,7 +87,10 @@
     "color": "#6a4f8c",
     "hp": 4,
     "speed": 2.6,
-    "scale": 1.5
+    "scale": 1.5,
+    "model": "vanguard",
+    "height": 2.6,
+    "tint": "#e0563a"
   },
   {
     "id": "crownZero",
@@ -76,6 +100,18 @@
     "color": "#c9a13a",
     "hp": 6,
     "speed": 2.9,
-    "scale": 1.9
+    "scale": 1.9,
+    "model": "vanguard",
+    "height": 3.2,
+    "tint": "#4a4038"
+  },
+  {
+    "id": "sol",
+    "name": "Sol",
+    "kind": "npc",
+    "position": [748, 2.6, -14],
+    "color": "#2f7f86",
+    "model": "remy",
+    "height": 1.74
   }
 ]

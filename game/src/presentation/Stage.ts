@@ -1,5 +1,8 @@
 import * as THREE from 'three';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { ActorState, Director } from '../story/Director';
+import type { AssetLibrary } from './AssetLibrary';
+import { CastAnimator, type CastClip } from './CastAnimator';
 
 interface Figure {
   root: THREE.Group;
@@ -7,6 +10,7 @@ interface Figure {
   eye: THREE.MeshStandardMaterial | null;
   maxHp: number;
   phase: number;
+  anim?: CastAnimator;
 }
 
 /**
@@ -20,7 +24,10 @@ export class Stage {
   private readonly pickup: THREE.Group;
   private time = 0;
 
-  constructor(private readonly scene: THREE.Scene) {
+  constructor(
+    private readonly scene: THREE.Scene,
+    private readonly assets: AssetLibrary | null = null,
+  ) {
     const glow = new THREE.MeshBasicMaterial({
       color: 0xffd27a,
       transparent: true,
@@ -58,6 +65,17 @@ export class Stage {
     }
   }
 
+  private figureFor(a: ActorState): Figure {
+    const source = a.def.model ? this.assets?.cast.get(a.def.model) : undefined;
+    if (source) {
+      const gait = a.def.gait ?? (a.def.kind === 'enemy' ? 'run' : 'walk');
+      return castFigure(a, source, this.assets?.castClips?.clips[gait] ?? null);
+    }
+    const piece = actorPiece(a.def.id);
+    if (this.assets?.has(piece)) return modelFigure(a, this.assets.instance(piece));
+    return a.def.kind === 'enemy' ? enemyFigure(a) : npcFigure(a);
+  }
+
   sync(d: Director, dt: number, beat: number, kit: THREE.Vector3): void {
     this.time += dt;
     for (const [id, f] of this.figures) {
@@ -69,7 +87,7 @@ export class Stage {
     for (const [id, a] of d.actors) {
       let f = this.figures.get(id);
       if (!f) {
-        f = a.def.kind === 'enemy' ? enemyFigure(a) : npcFigure(a);
+        f = this.figureFor(a);
         this.figures.set(id, f);
         this.scene.add(f.root);
         f.root.position.set(a.x, a.y, a.z);
@@ -82,9 +100,14 @@ export class Stage {
       let turn = a.facing - f.root.rotation.y;
       turn = Math.atan2(Math.sin(turn), Math.cos(turn));
       f.root.rotation.y += turn * (1 - Math.exp(-dt * 8));
-      const t = this.time * (a.moving ? 9 : 2) + f.phase;
-      f.body.position.y = Math.abs(Math.sin(t)) * (a.moving ? 0.07 : 0.015);
-      f.body.rotation.z = a.stagger > 0 ? Math.sin(this.time * 30) * 0.12 : 0;
+      if (f.anim) {
+        const pace = a.def.kind === 'enemy' ? (a.def.speed ?? 2.4) : 2.7;
+        f.anim.update(dt, a.moving ? pace : 0, a.stagger > 0);
+      } else {
+        const t = this.time * (a.moving ? 9 : 2) + f.phase;
+        f.body.position.y = Math.abs(Math.sin(t)) * (a.moving ? 0.07 : 0.015);
+        f.body.rotation.z = a.stagger > 0 ? Math.sin(this.time * 30) * 0.12 : 0;
+      }
       if (f.eye) {
         const pulse = Math.max(0, 1 - (beat - Math.floor(beat)) * 2);
         f.eye.emissiveIntensity = a.stagger > 0 ? 0.15 : 0.8 + pulse * 2.2;
@@ -116,6 +139,57 @@ export class Stage {
       this.pickup.rotation.y = this.time * 1.6;
     }
   }
+}
+
+/** A rigged character from the cast library: fitted to height, tinted, and animated. */
+function castFigure(a: ActorState, source: THREE.Object3D, clip: CastClip | null): Figure {
+  const model = cloneSkinned(source);
+  const anim = new CastAnimator(model, clip);
+  const { min, max } = CastAnimator.extent(model);
+  const height = a.def.height ?? 1.7;
+  // bones span ankle-ish to head-top-ish; the toe bones sit a few cm above the sole
+  const k = Number.isFinite(max - min) && max > min ? (height * 0.97) / (max - min) : 1;
+  model.scale.setScalar(k);
+  model.position.y = -min * k + 0.03 * height;
+  anim.fit(k, min);
+
+  let eye: THREE.MeshStandardMaterial | null = null;
+  const tint = a.def.tint ? new THREE.Color(a.def.tint) : null;
+  model.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const src = mesh.material as THREE.MeshStandardMaterial;
+    if (a.def.kind === 'enemy' && /visor|eye/i.test(src.name)) {
+      eye = src.clone();
+      eye.color.set(0x1a1410);
+      eye.emissive.set(0xff5a36);
+      eye.emissiveMap = null;
+      mesh.material = eye;
+    } else if (tint) {
+      const m = src.clone();
+      m.color.copy(tint);
+      mesh.material = m;
+    }
+  });
+
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  body.add(model);
+  root.add(body, label(a.def.name, height + 0.32));
+  return { root, body, eye, maxHp: a.def.hp ?? 1, phase: 0, anim: anim.rigged ? anim : undefined };
+}
+
+/** Kit-piece name for an actor's generated model: `paz` → `KIT_actor_paz`. */
+export const actorPiece = (id: string): string => `KIT_actor_${id.replace(/\W/g, '_')}`;
+
+/** A generated character model (static mesh; it bobs and turns like the stand-ins). */
+function modelFigure(a: ActorState, model: THREE.Object3D): Figure {
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  body.add(model);
+  const top = new THREE.Box3().setFromObject(model).max.y;
+  root.add(body, label(a.def.name, top + 0.3));
+  return { root, body, eye: null, maxHp: a.def.hp ?? 1, phase: Math.random() * 6 };
 }
 
 function flat(color: THREE.ColorRepresentation, extra: THREE.MeshStandardMaterialParameters = {}) {

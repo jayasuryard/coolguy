@@ -14,11 +14,11 @@ export class Simulation implements CellSink {
   constructor(
     private readonly rapier: typeof RAPIER,
     spawn: V3,
-    bounds: { width: number; depth: number },
+    bounds: { minX: number; minZ: number; maxX: number; maxZ: number },
   ) {
     this.world = new rapier.World({ x: 0, y: CONFIG.sim.gravity, z: 0 });
     this.world.timestep = CONFIG.sim.dt;
-    this.addBoundary(bounds.width, bounds.depth);
+    this.addBoundary(bounds);
     this.kit = new Kit(rapier, this.world, spawn);
   }
 
@@ -70,6 +70,20 @@ export class Simulation implements CellSink {
     return hit ? hit.timeOfImpact : maxDist;
   }
 
+  /** Make colliders added since the last step visible to ray queries (used while building the world). */
+  refreshQueries(): void {
+    const w = this.world as unknown as { updateSceneQueries?: () => void };
+    if (w.updateSceneQueries) w.updateSceneQueries();
+    else this.world.step();
+  }
+
+  /** Height of whatever is solid at (x, z) seen from the sky, or null over open water. */
+  heightAt(x: number, z: number): number | null {
+    const ray = new this.rapier.Ray({ x, y: 160, z }, { x: 0, y: -1, z: 0 });
+    const hit = this.world.castRay(ray, 260, true, undefined, undefined, this.kit.collider);
+    return hit ? 160 - hit.timeOfImpact : null;
+  }
+
   /** Height of the ground under (x, z), searching down from a little above `nearY`. */
   groundY(x: number, z: number, nearY: number): number {
     const top = nearY + 2.5;
@@ -79,18 +93,43 @@ export class Simulation implements CellSink {
   }
 
   /** Invisible walls around the playable envelope. */
-  private addBoundary(w: number, d: number): void {
+  private addBoundary(b: { minX: number; minZ: number; maxX: number; maxZ: number }): void {
     const R = this.rapier;
     const h = 60;
     const t = 1;
+    const w = (b.maxX - b.minX) / 2;
+    const d = (b.maxZ - b.minZ) / 2;
+    const cx = (b.minX + b.maxX) / 2;
+    const cz = (b.minZ + b.maxZ) / 2;
     const walls: Array<[number, number, number, number, number, number]> = [
-      [w / 2, h / 2, -t, w / 2, h / 2, t],
-      [w / 2, h / 2, d + t, w / 2, h / 2, t],
-      [-t, h / 2, d / 2, t, h / 2, d / 2],
-      [w + t, h / 2, d / 2, t, h / 2, d / 2],
+      [cx, h / 2, b.minZ - t, w, h / 2, t],
+      [cx, h / 2, b.maxZ + t, w, h / 2, t],
+      [b.minX - t, h / 2, cz, t, h / 2, d],
+      [b.maxX + t, h / 2, cz, t, h / 2, d],
     ];
     for (const [x, y, z, hx, hy, hz] of walls) {
       this.world.createCollider(R.ColliderDesc.cuboid(hx, hy, hz).setTranslation(x, y, z));
     }
+  }
+
+  /** A solid box that is moved about (the tram). Call `move` once per frame. */
+  addKinematicBox(half: V3): { move(center: V3, yaw: number): void } {
+    const body = this.world.createRigidBody(this.rapier.RigidBodyDesc.kinematicPositionBased());
+    this.world.createCollider(this.rapier.ColliderDesc.cuboid(half.x, half.y, half.z), body);
+    return {
+      move: (c, yaw) => {
+        body.setNextKinematicTranslation(c);
+        body.setNextKinematicRotation({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) });
+      },
+    };
+  }
+
+  /** Static box (a building): centre, half extents, yaw in radians. */
+  addStaticBox(center: V3, half: V3, yaw = 0): void {
+    this.world.createCollider(
+      this.rapier.ColliderDesc.cuboid(half.x, half.y, half.z)
+        .setTranslation(center.x, center.y, center.z)
+        .setRotation({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) }),
+    );
   }
 }

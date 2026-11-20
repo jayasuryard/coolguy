@@ -1,5 +1,6 @@
 import type {
   ActorDef,
+  DistrictSheet,
   ChapterDef,
   ContentBundle,
   FactDef,
@@ -19,6 +20,11 @@ import steps from '@content/story/steps.json';
 import versions from '@content/world/versions.json';
 import world from '@content/world/world.json';
 
+const sheets = import.meta.glob<DistrictSheet>('../../content/world/districts/*.json', {
+  eager: true,
+  import: 'default',
+});
+
 const missions = import.meta.glob<MissionDef>('../../content/missions/*.json', {
   eager: true,
   import: 'default',
@@ -34,6 +40,9 @@ export const CONTENT: ContentBundle = {
   chapters: chapters as ChapterDef[],
   actors: actors as ActorDef[],
   steps: steps as StepDef[],
+  sheets: Object.keys(sheets)
+    .sort()
+    .map((k) => sheets[k]!),
   missions: Object.keys(missions)
     .sort()
     .map((k) => missions[k]!),

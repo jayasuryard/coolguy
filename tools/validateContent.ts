@@ -6,7 +6,7 @@
 import type { ContentBundle, Vec3, WorldObject } from '../content/types.ts';
 import { VERSION_IDS } from '../content/types.ts';
 
-const CELL_ID = /^cell\.(\d+)\.(\d+)$/;
+const CELL_ID = /^cell\.(-?\d+)\.(-?\d+)$/;
 
 function anchorOf(o: WorldObject): Vec3 {
   switch (o.kind) {
@@ -34,8 +34,13 @@ export function validateContent(c: ContentBundle): string[] {
       floorForRow.set(r, d.floorY);
     }
   }
-  for (let r = 0; r < world.rows; r++) {
-    if (!floorForRow.has(r)) err(`row ${r} has no district`);
+  const minCol = world.minCol ?? 0;
+  const minRow = world.minRow ?? 0;
+  // greybox worlds derive floors from rows, so every row needs a district; a modelled world doesn't
+  if (world.autoFloors !== false) {
+    for (let r = minRow; r < minRow + world.rows; r++) {
+      if (!floorForRow.has(r)) err(`row ${r} has no district`);
+    }
   }
 
   const checkObject = (o: WorldObject, cellId: string, col: number, row: number) => {
@@ -67,7 +72,7 @@ export function validateContent(c: ContentBundle): string[] {
     }
     const col = Number(m[1]);
     const row = Number(m[2]);
-    if (col >= world.cols || row >= world.rows)
+    if (col < minCol || row < minRow || col >= minCol + world.cols || row >= minRow + world.rows)
       err(`${cell.id} is outside the ${world.cols}x${world.rows} grid`);
     if (cellIds.has(cell.id)) err(`duplicate cell "${cell.id}"`);
     cellIds.add(cell.id);

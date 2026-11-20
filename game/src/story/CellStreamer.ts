@@ -1,5 +1,5 @@
 import type { ContentBundle, VersionId, WorldObject } from '@content/types';
-import { cellAt, cellId, resolveCell } from './cells';
+import { cellAt, cellId, inGrid, resolveCell } from './cells';
 
 /** Anything that mirrors loaded cells: physics colliders, render meshes, later audio/nav. */
 export interface CellSink {
@@ -31,14 +31,13 @@ export class CellStreamer {
   update(x: number, z: number, version: VersionId, budget = 2): void {
     const here = cellAt(this.content.world, x, z);
     if (!here) return;
-    const { cols, rows } = this.content.world;
 
     const wanted: Array<{ col: number; row: number; d: number }> = [];
     for (let dr = -this.loadRadius; dr <= this.loadRadius; dr++) {
       for (let dc = -this.loadRadius; dc <= this.loadRadius; dc++) {
         const col = here.col + dc;
         const row = here.row + dr;
-        if (col < 0 || row < 0 || col >= cols || row >= rows) continue;
+        if (!inGrid(this.content.world, col, row)) continue;
         wanted.push({ col, row, d: Math.max(Math.abs(dc), Math.abs(dr)) });
       }
     }

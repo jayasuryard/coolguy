@@ -16,9 +16,9 @@ export class CellView implements CellSink {
   private readonly groups = new Map<string, THREE.Group>();
   private readonly materials = new Map<string, THREE.MeshStandardMaterial>();
   private readonly padMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
+    color: 0x9fd8d0,
     emissive: 0x4fd1c5,
-    emissiveIntensity: 0.6,
+    emissiveIntensity: 0.35,
   });
   private readonly receiverMaterial = new THREE.MeshStandardMaterial({
     color: 0xffd36b,

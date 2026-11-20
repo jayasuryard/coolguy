@@ -1,17 +1,17 @@
 [
   {
     "id": "l1.amp",
-    "objective": "Set up the amp on your pitch.",
+    "objective": "Set up the boombox on your pitch.",
     "trigger": {
       "type": "use",
       "position": [132.6, 0, 329.5],
-      "label": "plug in the amp"
+      "label": "switch on the boombox"
     },
     "intro": [
       "Bellweather, last ferry of the evening.",
       "Kit: One good set and I can pay Ione back for the tram fare."
     ],
-    "lines": ["The amp hums awake."]
+    "lines": ["The boombox hums awake."]
   },
   {
     "id": "l1.tune",
@@ -348,7 +348,54 @@
       "Rank earned: City Hero"
     ],
     "effects": {
-      "ending": true
+      "ending": true,
+      "travelTo": "pad.quay.home"
+    }
+  },
+  {
+    "id": "l7.walk",
+    "objective": "Follow the new boardwalk east from Punch Quay to Seaglass Cove.",
+    "trigger": {
+      "type": "reach",
+      "position": [756, 2.6, -17],
+      "radius": 9
+    },
+    "intro": [
+      "Ione: They finished the boardwalk while you were up the hill. Runs from the east end of the quay.",
+      "Ione: Seaglass Cove has been asking after the busker who stopped the count."
+    ],
+    "lines": ["Seaglass Cove: sand, shutters, and nobody watching a clock."]
+  },
+  {
+    "id": "l7.sol",
+    "objective": "Talk to Sol on the promenade.",
+    "trigger": {
+      "type": "talk",
+      "npc": "sol"
+    },
+    "actors": ["sol"],
+    "lines": [
+      "Sol: You are him. The one with the spare beat.",
+      "Sol: The beach has no lamp, no receiver, nothing to wake. Just play it for us."
+    ]
+  },
+  {
+    "id": "l7.play",
+    "objective": "Play the Spare Beat on the beach. Four clean bars.",
+    "trigger": {
+      "type": "perform",
+      "position": [756, 1.2, 16],
+      "radius": 10,
+      "phrase": "spare",
+      "hits": 4
+    },
+    "actors": ["sol"],
+    "lines": [
+      "The cove keeps the beat a moment after you stop.",
+      "Sol: Come back tomorrow. Bring the rest of the city with you."
+    ],
+    "effects": {
+      "facts": ["job.7.complete"]
     }
   }
 ]

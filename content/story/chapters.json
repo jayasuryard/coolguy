@@ -3,7 +3,7 @@
     "id": "level.1",
     "title": "Loose Change",
     "district": "quay",
-    "objective": "Set up the amp, tune to the ferry horn and play for the quay.",
+    "objective": "Set up the boombox, tune to the ferry horn and play for the quay.",
     "completeFact": "job.1.complete"
   },
   {
@@ -40,5 +40,12 @@
     "district": "crown",
     "objective": "Relay the spare beat up the hill to the Crown Lathe.",
     "completeFact": "machine.crown.lathe"
+  },
+  {
+    "id": "level.7",
+    "title": "Seaglass Session",
+    "district": "cove",
+    "objective": "Cross the boardwalk and play the beach at Seaglass Cove.",
+    "completeFact": "job.7.complete"
   }
 ]

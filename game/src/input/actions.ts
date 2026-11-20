@@ -26,6 +26,9 @@ export type Action =
   | 'pause'
   | 'recenter'
   | 'goggles'
+  | 'map'
+  | 'timeSkip'
+  | 'weatherNext'
   | 'strike'
   | 'guard'
   | 'dodge';
@@ -41,6 +44,9 @@ const shared: Bindings = {
   pause: ['Escape', 'Pad9'],
   recenter: ['KeyR', 'Pad11'],
   goggles: ['KeyG', 'Pad12'],
+  map: ['KeyM', 'Pad13'],
+  timeSkip: ['KeyT'],
+  weatherNext: ['KeyY'],
 };
 
 export const DEFAULT_BINDINGS: Record<InputContext, Bindings> = {

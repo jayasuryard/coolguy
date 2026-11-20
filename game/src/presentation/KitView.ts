@@ -4,7 +4,8 @@ import type { Kit } from '../sim/Kit';
 import type { AssetLibrary } from './AssetLibrary';
 import { KitAnimator } from './KitAnimator';
 
-const BACK_Z = -CONFIG.kit.radius - 0.07;
+/** Just behind Kit's shoulder blades (his back sits well inside the physics capsule). */
+const BACK_Z = -0.19;
 const KIT_HEIGHT = 1.8;
 /** Distance from the capsule centre (the physics position) down to the feet. */
 const FEET = CONFIG.kit.halfHeight + CONFIG.kit.radius;
@@ -12,11 +13,15 @@ const FEET = CONFIG.kit.halfHeight + CONFIG.kit.radius;
 const MODEL_YAW = 0;
 const PLAY_Z = 0.34;
 /** Guitar height (relative to the capsule centre) on the back vs. held at the belly while playing. */
-const BACK_Y = -0.05;
+/** Height of the instrument's middle above Kit's centre: across the upper back, not the hips. */
+const BACK_Y = 0.33;
 const PLAY_Y = 0.16;
 
+/** Turns the instrument so its strings face away from Kit's back. */
+const GUITAR_YAW = Math.PI;
+
 /**
- * Kit: the Hunyuan 3D model (or a placeholder capsule) carrying the modeled cobalt guitar.
+ * Kit: the Hunyuan 3D model (or a placeholder capsule) carrying his instrument.
  * Rigged exports animate through KitAnimator; static ones get a procedural bob.
  */
 export class KitView {
@@ -62,7 +67,13 @@ export class KitView {
       }
     }
     this.guitar = new THREE.Group();
-    if (assets?.has('KIT_guitar')) {
+    if (assets?.has('KIT_prop_guitar')) {
+      // the scanned instrument stands on its base; hang it from its middle
+      const g = assets.instance('KIT_prop_guitar');
+      g.position.y = -0.475;
+      g.rotation.y = GUITAR_YAW;
+      this.guitar.add(g);
+    } else if (assets?.has('KIT_guitar')) {
       const g = assets.instance('KIT_guitar');
       g.rotation.y = Math.PI; // face away from Kit's back so the camera sees it
       this.guitar.add(g);
@@ -73,7 +84,7 @@ export class KitView {
       );
       this.guitar.add(fallback);
     }
-    this.guitar.position.set(0, -0.05, BACK_Z);
+    this.guitar.position.set(0, BACK_Y, BACK_Z);
     this.guitar.rotation.z = 0.6; // diagonal across the back (Art Direction)
     this.guitar.traverse((o) => (o.castShadow = true));
     this.root.add(body, this.guitar);

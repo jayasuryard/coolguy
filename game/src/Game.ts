@@ -1,5 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { PadDef, StepDef, VersionId } from '@content/types';
+import type { DistrictSheet, PadDef, StepDef, VersionId } from '@content/types';
 import * as THREE from 'three';
 import { Guitar } from './audio/Guitar';
 import { CONFIG } from './config';
@@ -13,19 +13,27 @@ import { AssetLibrary } from './presentation/AssetLibrary';
 import { CameraRig } from './presentation/CameraRig';
 import { CityModel } from './presentation/CityModel';
 import { CellView } from './presentation/CellView';
-import { Environment } from './presentation/Environment';
+import { DistrictModel } from './presentation/DistrictModel';
+import { dressIsland } from './presentation/IslandDressing';
+import { Scatter } from './presentation/Scatter';
+import { Environment, FOG_FAR } from './presentation/Environment';
 import { Hud } from './presentation/Hud';
 import { KitView } from './presentation/KitView';
+import { buildMachines } from './presentation/Machines';
+import { Fx } from './presentation/Fx';
+import { PostFx } from './presentation/PostFx';
 import { Stage } from './presentation/Stage';
+import { Tram } from './presentation/Tram';
 import { EventBus, type DomainEvent } from './sim/events';
 import { FixedStepLoop } from './sim/FixedStepLoop';
 import type { KitIntent } from './sim/Kit';
 import { PhrasePerformer } from './sim/PhrasePerformer';
 import { Simulation } from './sim/Simulation';
 import { CellStreamer } from './story/CellStreamer';
-import { findObject } from './story/cells';
+import { districtAt, findObject, worldBounds } from './story/cells';
 import { Director } from './story/Director';
 import { StoryState } from './story/StoryState';
+import { MapView, type MapBlip } from './ui/MapView';
 import { AudioTimeSource, SilentTimeSource, Transport, scheduleClick } from './transport/Transport';
 
 /** Shell callbacks: the HTML UI owns the pause screen; the game only reports state changes. */
@@ -78,10 +86,12 @@ export class Game {
 
   /** Dev toggles. */
   noclip = false;
-  metronome = true;
+  /** Audible click on every beat. Off by default: the beat lamp shows the pulse silently. */
+  metronome = false;
 
   private readonly loop = new FixedStepLoop(CONFIG.sim.dt, CONFIG.sim.maxCatchUpSteps);
   private readonly env: Environment;
+  private readonly post: PostFx;
   private readonly kitView: KitView;
   private readonly rig: CameraRig;
   private readonly performer: PhrasePerformer;
@@ -92,6 +102,32 @@ export class Game {
   private quiet = 0;
   private lastStepId: string | null = null;
   private ended = false;
+  private scatter: Scatter | null = null;
+  private tram: Tram | null = null;
+  private tramBox: { move(c: { x: number; y: number; z: number }, yaw: number): void } | null =
+    null;
+  private districts: Array<{
+    sheet: DistrictSheet;
+    x: number;
+    z: number;
+    radius: number;
+    root: THREE.Object3D | null;
+  }> = [];
+  private streamTimer = 0;
+  private frameCount = 0;
+  /** Adaptive resolution: 1 = full, lowered while frames run long. */
+  private dynScale = 1;
+  private slowFor = 0;
+  private fastFor = 0;
+  private lastReal = 0;
+  private readonly fx: Fx;
+  private readonly map: MapView;
+  private hearts = CONFIG.kitHearts;
+  private coins = 0;
+  private lensOn = false;
+  private clock = 0;
+  private readonly aim = new THREE.Vector3();
+  private readonly mouth = new THREE.Vector3();
   private saving: Promise<void> = Promise.resolve();
   private learnedCount = 0;
   private settings: Settings;
@@ -123,16 +159,27 @@ export class Game {
       parts.physics = 1;
       report('Laying the paving stones…');
     });
-    const assets = AssetLibrary.load(undefined, (f) => {
-      parts.kit = f;
-      report('Tuning Kit’s guitar…');
-    });
+    const cast = [...new Set(CONTENT.actors.flatMap((a) => (a.model ? [a.model] : [])))];
+    const assets = AssetLibrary.load(
+      undefined,
+      (f) => {
+        parts.kit = f;
+        report(f < 0.3 ? 'Tuning Kit’s guitar…' : 'Waking the neighbours…');
+      },
+      cast,
+    );
     const city =
       CONTENT.world.autoFloors === false
-        ? CityModel.load(undefined, (f) => {
-            parts.city = f;
-            report('Loading the quay…');
-          })
+        ? assets.then((lib) =>
+            CityModel.load(
+              undefined,
+              (f) => {
+                parts.city = f;
+                report('Loading the quay…');
+              },
+              lib.scatter.has('tree_island'),
+            ),
+          )
         : Promise.resolve(null);
     const [, a, c] = await Promise.all([physics, assets, city]);
     if (CONTENT.world.autoFloors === false && !c) throw new Error('the city model failed to load');
@@ -164,7 +211,7 @@ export class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 0.92; // evening light
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(this.renderer.domElement);
@@ -194,16 +241,44 @@ export class Game {
     // ---- simulation ----
     const { world } = CONTENT;
     const pad = this.padPosition(this.story.lastSafePad);
-    this.sim = new Simulation(
-      RAPIER,
-      { x: pad.x, y: pad.y + 1, z: pad.z },
-      { width: world.cols * world.cellSize, depth: world.rows * world.cellSize },
-    );
+    this.sim = new Simulation(RAPIER, { x: pad.x, y: pad.y + 1, z: pad.z }, worldBounds(world));
 
     if (city) {
       this.scene.add(city.root);
       for (const c of city.colliders) this.sim.addStaticMesh(c.vertices, c.indices);
     }
+    // nature models, instanced: trees, shore rock, cliffs, grass
+    if (city && assets?.scatter.size) {
+      this.sim.refreshQueries();
+      const scatter = new Scatter(assets.scatter);
+      this.scatter = scatter;
+      const boxes = dressIsland(scatter, city.treeSpots, (x, z) => this.sim.heightAt(x, z));
+      this.scene.add(scatter.root);
+      for (const b of boxes) {
+        this.sim.addStaticBox(
+          { x: b.center[0], y: b.center[1], z: b.center[2] },
+          { x: b.half[0], y: b.half[1], z: b.half[2] },
+          b.yaw,
+        );
+      }
+    }
+    // the mainland arrives district by district as Kit gets near (see streamDistricts)
+    this.districts = CONTENT.sheets.map((sheet) => {
+      const pts = sheet.lands.flatMap((l) => l.outline);
+      const xs = pts.map((q) => q[0]);
+      const zs = pts.map((q) => q[1]);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+      return {
+        sheet,
+        x: cx,
+        z: cz,
+        radius: Math.hypot(Math.max(...xs) - cx, Math.max(...zs) - cz),
+        root: null,
+      };
+    });
+    this.streamDistricts(pad.x, pad.z);
+    this.scene.add(buildMachines(CONTENT.world));
     this.cellView = new CellView(this.scene, assets);
     this.streamer = new CellStreamer(
       CONTENT,
@@ -214,9 +289,12 @@ export class Game {
     this.streamer.update(pad.x, pad.z, this.story.activeVersion, Infinity);
 
     this.env = new Environment(this.scene, CONTENT.world.waterLevel ?? null, {
-      width: world.cols * world.cellSize,
-      depth: world.rows * world.cellSize,
+      width: 8 * world.cellSize,
+      depth: 6 * world.cellSize,
     });
+    this.env.bakeLighting(this.renderer);
+    this.env.loadSky();
+    this.post = new PostFx(this.renderer, this.scene, this.camera);
     this.kitView = new KitView(this.scene, assets);
     this.rig = new CameraRig(this.camera, (o, d, m) => this.sim.rayDistance(o, d, m));
 
@@ -247,14 +325,33 @@ export class Game {
     this.guitar = opts.audio
       ? new Guitar(opts.audio, () => this.settings.musicVolume * this.settings.masterVolume)
       : null;
-    this.stage = new Stage(this.scene);
+    this.stage = new Stage(this.scene, assets);
     this.director = new Director(CONTENT, this.story, {
       groundY: (x, z, nearY) => this.sim.groundY(x, z, nearY),
       say: (lines) => this.hud.say(lines),
-      cue: (kind) => this.guitar?.cue(kind),
-      caught: () => this.teleportToPad(this.story.lastSafePad),
+      cue: (kind) => {
+        this.guitar?.cue(kind);
+        const earned = { coin: 3, enemyDown: 15, pickup: 5 }[kind as string] ?? 0;
+        if (earned) this.coins += earned;
+      },
+      caught: (by) => this.onCaught(by),
       stepCompleted: (step) => this.onStepCompleted(step),
     });
+    this.fx = new Fx(this.scene);
+    if (assets?.has('KIT_tram_hunyuan')) {
+      this.tram = new Tram(assets.instance('KIT_tram_hunyuan'), () => {
+        // the bell carries a fair way along the quay, then fades
+        const k = this.sim.kit.curr;
+        if (this.tram && Math.hypot(this.tram.position.x - k.x, this.tram.position.z - k.z) < 90) {
+          this.guitar?.bell();
+        }
+      });
+      this.scene.add(this.tram.root);
+      this.tramBox = this.sim.addKinematicBox({ x: 4.5, y: 1.6, z: 1.16 });
+      this.tramBox.move(this.tram.position, this.tram.yaw);
+    }
+    this.map = new MapView(CONTENT.world);
+    this.coins = opts.save.coins ?? 0;
     this.bus.on((e) => this.onDomainEvent(e));
 
     // ---- platform: focus / visibility ----
@@ -281,9 +378,16 @@ export class Game {
   /** Apply (possibly changed) settings live: display, camera, controls. */
   applySettings(s: Settings): void {
     this.settings = s;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * s.renderScale);
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, 2) * s.renderScale * this.dynScale,
+    );
+    this.post.setSize(
+      this.container.clientWidth,
+      this.container.clientHeight,
+      this.renderer.getPixelRatio(),
+    );
     this.renderer.shadowMap.enabled = s.shadows !== 'off';
-    const size = s.shadows === 'high' ? 2048 : 1024;
+    const size = s.shadows === 'high' ? 4096 : 2048;
     if (this.env.sun.shadow.mapSize.x !== size) {
       this.env.sun.shadow.mapSize.set(size, size);
       this.env.sun.shadow.map?.dispose();
@@ -322,6 +426,8 @@ export class Game {
     this.revision = loaded.save.revision;
     this.afterStoryChange(before);
     this.pendingCut = null;
+    this.coins = loaded.save.coins ?? 0;
+    this.hearts = CONFIG.kitHearts;
     this.director.reset();
     this.teleportToPad(this.story.lastSafePad);
     return true;
@@ -344,14 +450,32 @@ export class Game {
 
   private frame = (now: number): void => {
     this.rafId = requestAnimationFrame(this.frame);
-    const dt = Math.min((now - this.last) / 1000, 0.25);
+    const dt = Math.max(0, Math.min((now - this.last) / 1000, 0.25));
     this.last = now;
 
     this.input.pollGamepads();
-    if (this.input.consume('pause', 'pressed') && !this.loop.paused) this.pause('Paused.');
+    const esc = !!this.input.consume('pause', 'pressed');
+    if (!this.loop.paused && !this.pendingCut) {
+      if (this.input.consume('map', 'pressed')) this.setMapOpen(!this.map.open);
+      else if (esc && this.map.open) this.setMapOpen(false);
+      else if (esc) this.pause('Paused.');
+    } else if (esc && !this.loop.paused) this.pause('Paused.');
 
-    if (!this.loop.paused) {
+    if (!this.loop.paused && this.map.open) {
+      // the world holds still while the map is up; only the map redraws
+      this.input.takeMouseDelta();
+      this.clock += dt;
+      this.drawMap();
+    } else if (!this.loop.paused) {
+      this.clock += dt;
       this.handleFrameActions();
+      if (this.tram && this.tramBox) {
+        // the story scenes at the stop need the tram standing there
+        const id = this.story.currentStep?.id ?? '';
+        const hold = id.startsWith('l2.') || ['l4.doors', 'l4.collector', 'l4.key'].includes(id);
+        this.tram.update(dt, this.sim.kit.curr, hold);
+        this.tramBox.move(this.tram.position, this.tram.yaw);
+      }
       const { steps, alpha } = this.loop.advance(dt);
       const intent = this.intent();
       for (let i = 0; i < steps; i++) this.sim.step(intent);
@@ -372,12 +496,82 @@ export class Game {
         padX: this.input.rightStick.x,
         padY: this.input.rightStick.y,
       });
-      this.env.update(this.kitView.position, this.camera);
+      this.env.update(this.kitView.position, this.camera, dt);
       this.updatePresentation(dt);
     }
 
-    this.renderer.render(this.scene, this.camera);
+    this.cullAndPace(dt);
+    this.post.render();
   };
+
+  /**
+   * Build mainland districts when Kit comes within sight of them — the haze ends at FOG_FAR, so
+   * a district appears out of the fog rather than popping in — and add their colliders then.
+   */
+  private streamDistricts(x: number, z: number): void {
+    for (const d of this.districts) {
+      if (d.root || Math.hypot(d.x - x, d.z - z) - d.radius > FOG_FAR + 60) continue;
+      const model = new DistrictModel([d.sheet]);
+      d.root = model.root;
+      this.scene.add(model.root);
+      for (const c of model.meshes) this.sim.addStaticMesh(c.vertices, c.indices);
+      for (const b of model.boxes) {
+        this.sim.addStaticBox(
+          { x: b.center[0], y: b.center[1], z: b.center[2] },
+          { x: b.half[0], y: b.half[1], z: b.half[2] },
+          b.yaw,
+        );
+      }
+    }
+  }
+
+  /** Per frame: load what is coming into view, hide what the haze covers, keep the frame rate. */
+  private cullAndPace(dt: number): void {
+    const cam = this.camera.position;
+    const k = this.sim.kit.curr;
+    if ((this.streamTimer -= dt) <= 0) {
+      this.streamTimer = 0.5;
+      this.streamDistricts(k.x, k.z);
+    }
+    // anything wholly beyond the haze is not drawn at all
+    const w = CONTENT.world;
+    if (this.city) {
+      const ix = 4 * w.cellSize;
+      const iz = 3 * w.cellSize;
+      this.city.root.visible = Math.hypot(cam.x - ix, cam.z - iz) < FOG_FAR + 340;
+    }
+    for (const d of this.districts) {
+      if (d.root) d.root.visible = Math.hypot(cam.x - d.x, cam.z - d.z) - d.radius < FOG_FAR;
+    }
+    this.scatter?.cull(cam);
+
+    // the big sun shadow is redrawn every other frame; nothing in it moves fast enough to show
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.shadowMap.needsUpdate = this.frameCount++ % 2 === 0;
+
+    // adaptive resolution: trade sharpness for smoothness when frames run long, and back again
+    const now = performance.now();
+    const real = now - this.lastReal;
+    this.lastReal = now;
+    if (real <= 0 || real > 250 || this.loop.paused) return;
+    this.slowFor = real > 21 ? this.slowFor + real : 0;
+    this.fastFor = real < 14 ? this.fastFor + real : 0;
+    let next = this.dynScale;
+    if (this.slowFor > 1200) next = Math.max(0.55, this.dynScale - 0.1);
+    else if (this.fastFor > 4000) next = Math.min(1, this.dynScale + 0.1);
+    if (next === this.dynScale) return;
+    this.dynScale = next;
+    this.slowFor = this.fastFor = 0;
+    this.post.contactShading = next > 0.7;
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, 2) * this.settings.renderScale * next,
+    );
+    this.post.setSize(
+      this.container.clientWidth,
+      this.container.clientHeight,
+      this.renderer.getPixelRatio(),
+    );
+  }
 
   /** Camera-relative movement intent for this frame's fixed steps. */
   private intent(): KitIntent {
@@ -409,6 +603,13 @@ export class Game {
 
     this.focusedReceiver = this.findFocusedReceiver();
 
+    if (this.input.consume('timeSkip', 'pressed')) this.env.setHour(Math.floor(this.env.hour) + 1);
+    if (this.input.consume('weatherNext', 'pressed')) this.env.nextWeather();
+    if (this.input.consume('goggles', 'pressed')) {
+      if (this.story.has('goggles.collected')) this.lensOn = !this.lensOn;
+      else this.hud.caption('Kit has nothing to look through yet.');
+    }
+
     const press = this.input.consume('play', 'pressed');
     const release = this.input.consume('play', 'released');
     const phrase = learned[this.selectedPhrase];
@@ -425,7 +626,18 @@ export class Game {
     });
     if (!result) return;
 
-    this.guitar?.release(phrase, result.judgement === 'hit');
+    const hit = result.judgement === 'hit';
+    this.guitar?.release(phrase, hit);
+    // rings leave the guitar towards whatever the phrase was aimed at
+    const kc = this.sim.kit.curr;
+    this.mouth.set(kc.x, kc.y + 0.25, kc.z);
+    const receiver = this.focusedReceiver && this.cellView.receivers.get(this.focusedReceiver);
+    const foe = this.director.enemy;
+    let target: THREE.Vector3 | null = null;
+    if (receiver) target = this.aim.copy(receiver.position);
+    else if (foe && Math.hypot(foe.x - kc.x, foe.z - kc.z) <= 14)
+      target = this.aim.set(foe.x, foe.y + (foe.def.height ?? 1.7) * 0.6, foe.z);
+    this.fx.phrase(this.mouth, target, hit);
     const ms = Math.round(Math.abs(result.offsetMs));
     this.hud.flashJudgement(
       result.judgement === 'hit'
@@ -489,6 +701,11 @@ export class Game {
     const foe = this.pendingCut ? null : this.director.enemy;
     this.hud.setEnemy(foe ? foe.def.name : null, foe?.hp, foe?.def.hp);
     this.stage.sync(this.director, dt, beat, this.kitView.position);
+    this.fx.update(dt, this.camera);
+    this.hud.setVitals(this.hearts, CONFIG.kitHearts, this.coins, this.districtAt(k.z));
+    this.hud.setClock(this.env.label);
+    this.updateLens(dt);
+    this.drawMap();
     this.followStepPhrase();
 
     if (this.director.prompt && !this.pendingCut) {
@@ -519,9 +736,113 @@ export class Game {
     if (e.type === 'phraseReleased') this.director.onPhrase(e, this.sim.kit.curr);
   }
 
+  /** An enemy reached Kit: lose a heart and get thrown clear, or go back to the pad at zero. */
+  private onCaught(by: { x: number; z: number }): boolean {
+    this.hearts--;
+    this.hud.hurt();
+    if (this.hearts <= 0) {
+      this.hearts = CONFIG.kitHearts;
+      this.teleportToPad(this.story.lastSafePad);
+      return true;
+    }
+    const k = this.sim.kit.curr;
+    const d = Math.hypot(k.x - by.x, k.z - by.z) || 1;
+    const x = k.x + ((k.x - by.x) / d) * 6;
+    const z = k.z + ((k.z - by.z) / d) * 6;
+    const feet = k.y - 0.9;
+    const ground = this.sim.groundY(x, z, feet);
+    // only throw him somewhere he can stand
+    if (Math.abs(ground - feet) < 1.2) this.sim.kit.teleport({ x, y: ground + 0.95, z });
+    return false;
+  }
+
+  private districtAt(z: number): string {
+    return districtAt(CONTENT.world, this.sim.kit.curr.x, z)?.name ?? 'Bellweather Bay';
+  }
+
+  private setMapOpen(open: boolean): void {
+    if (open && !this.map.available) return;
+    this.map.setOpen(open);
+    this.performer.cancel();
+    if (open) {
+      if (document.pointerLockElement) document.exitPointerLock();
+      this.wasLocked = false;
+      const st = this.status();
+      this.hud.setMapPanel(this.districtAt(this.sim.kit.curr.z), st.chapter, st.objective);
+    } else this.input.requestPointerLock();
+    this.hud.show(!open);
+  }
+
+  private drawMap(): void {
+    const k = this.sim.kit.curr;
+    const blips: MapBlip[] = [];
+    for (const a of this.director.actors.values()) {
+      blips.push({
+        x: a.x,
+        z: a.z,
+        kind: a.def.kind === 'enemy' ? 'enemy' : 'resident',
+        label: a.def.name,
+      });
+    }
+    const t = this.pendingCut ? null : this.director.target;
+    if (t) {
+      // an objective that is a person or machine already has a name on the map
+      const named = blips.some((b) => Math.hypot(b.x - t.x, b.z - t.z) < 2);
+      blips.push({ x: t.x, z: t.z, kind: 'objective', label: named ? undefined : 'Objective' });
+    }
+    this.map.draw({
+      x: k.x,
+      z: k.z,
+      facing: this.sim.kit.facing,
+      yaw: this.rig.yaw,
+      blips,
+      objective: this.director.step?.objective ?? '',
+      district: this.districtAt(k.z),
+      time: this.clock,
+    });
+  }
+
+  /** Goggles: tint the frame and pin a reticle on the objective, wherever it is. */
+  private updateLens(dt: number): void {
+    const on = this.lensOn && !this.pendingCut;
+    this.post.lens = THREE.MathUtils.clamp(
+      this.post.lens + ((on ? 1 : 0) - this.post.lens) * (1 - Math.exp(-dt * 10)),
+      0,
+      1,
+    );
+    const t = this.director.target;
+    if (!on || !t) return this.hud.setLens(on, null);
+    const k = this.sim.kit.curr;
+    const foe = this.director.enemy;
+    this.aim.set(t.x, t.y + (foe ? (foe.def.height ?? 1.7) * 0.55 : 1.2), t.z);
+    const behind = this.aim.clone().applyMatrix4(this.camera.matrixWorldInverse).z > 0;
+    this.aim.project(this.camera);
+    let x = this.aim.x;
+    let y = this.aim.y;
+    if (behind) {
+      x = -x;
+      y = -y;
+    }
+    const edge = behind || Math.abs(x) > 0.86 || Math.abs(y) > 0.8;
+    if (edge) {
+      const m = Math.max(Math.abs(x) / 0.86, Math.abs(y) / 0.8, 1e-3);
+      x /= m;
+      y /= m;
+    }
+    this.hud.setLens(true, {
+      x: (x * 0.5 + 0.5) * 100,
+      y: (-y * 0.5 + 0.5) * 100,
+      edge,
+      label: `${foe ? foe.def.name : 'Objective'} · ${Math.round(Math.hypot(t.x - k.x, t.z - k.z))} m`,
+    });
+  }
+
   /** A campaign step finished: save, and line up its cut (travel card or ending) if it has one. */
   private onStepCompleted(step: StepDef): void {
     this.hud.setRank(this.story.rank.title);
+    this.hearts = CONFIG.kitHearts;
+    // the first look through Mara's goggles
+    if (step.effects?.facts?.includes('lens.raisedOnce')) this.lensOn = true;
     if (step.effects?.travelTo || step.effects?.ending) {
       this.pendingCut = step;
       this.quiet = 0;
@@ -604,6 +925,7 @@ export class Game {
       unlockedVersions: s.unlockedVersions,
       learnedPhrases: this.story.learnedPhrases,
       questFacts: s.facts,
+      coins: this.coins,
       completedStories: [],
       endingChoice: null,
     };
@@ -657,6 +979,7 @@ export class Game {
   pause(reason: string): void {
     if (this.ended) return;
     if (this.loop.paused) return this.ui.onPause(reason);
+    if (this.map.open) this.map.setOpen(false);
     this.loop.pause();
     this.transport.pause();
     this.performer.cancel();
@@ -689,6 +1012,7 @@ export class Game {
   teleportToPad(id: string): void {
     const p = this.padPosition(id);
     this.streamer.update(p.x, p.z, this.story.activeVersion, Infinity);
+    this.streamDistricts(p.x, p.z);
     this.sim.kit.teleport({ x: p.x, y: p.y + 1, z: p.z });
   }
 
@@ -702,5 +1026,6 @@ export class Game {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
+    this.post.setSize(w, h, this.renderer.getPixelRatio());
   }
 }

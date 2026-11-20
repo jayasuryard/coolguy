@@ -1,4 +1,11 @@
-import type { BlockDef, VersionId, WorldDef, WorldObject, VersionDef } from '@content/types';
+import type {
+  BlockDef,
+  DistrictDef,
+  VersionId,
+  WorldDef,
+  WorldObject,
+  VersionDef,
+} from '@content/types';
 
 /** Pure cell-grid helpers: IDs, lookup and version-overlay resolution. */
 
@@ -7,8 +14,46 @@ export const cellId = (col: number, row: number): string => `cell.${col}.${row}`
 export function cellAt(world: WorldDef, x: number, z: number): { col: number; row: number } | null {
   const col = Math.floor(x / world.cellSize);
   const row = Math.floor(z / world.cellSize);
-  if (col < 0 || row < 0 || col >= world.cols || row >= world.rows) return null;
-  return { col, row };
+  return inGrid(world, col, row) ? { col, row } : null;
+}
+
+/** Whether a cell index lies inside the world's grid (which may start at negative indices). */
+export function inGrid(world: WorldDef, col: number, row: number): boolean {
+  const c0 = world.minCol ?? 0;
+  const r0 = world.minRow ?? 0;
+  return col >= c0 && row >= r0 && col < c0 + world.cols && row < r0 + world.rows;
+}
+
+/** The world's extent in metres. */
+export function worldBounds(world: WorldDef): {
+  minX: number;
+  minZ: number;
+  maxX: number;
+  maxZ: number;
+} {
+  const s = world.cellSize;
+  const c0 = world.minCol ?? 0;
+  const r0 = world.minRow ?? 0;
+  return { minX: c0 * s, minZ: r0 * s, maxX: (c0 + world.cols) * s, maxZ: (r0 + world.rows) * s };
+}
+
+/** Name of the district at a point: mainland regions first, then the island's rows. */
+export function districtAt(world: WorldDef, x: number, z: number): DistrictDef | undefined {
+  for (const d of world.districts) {
+    if (d.region && pointInPolygon(x, z, d.region)) return d;
+  }
+  const island = x >= 0 && x < 8 * world.cellSize;
+  return island ? districtForRow(world, Math.floor(z / world.cellSize)) : undefined;
+}
+
+export function pointInPolygon(x: number, z: number, poly: Array<[number, number]>): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, zi] = poly[i]!;
+    const [xj, zj] = poly[j]!;
+    if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
 }
 
 export function floorYForRow(world: WorldDef, row: number): number {

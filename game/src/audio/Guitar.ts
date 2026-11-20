@@ -81,6 +81,16 @@ export class Guitar {
     o.stop(at + decay + 0.05);
   }
 
+  /** The tram's bell: two bright strokes. */
+  bell(): void {
+    const t = this.ctx.currentTime + 0.02;
+    for (const at of [0, 0.34]) {
+      this.ping(1568, t + at, 0.11, 0.9, 'sine');
+      this.ping(2349, t + at, 0.05, 0.6, 'sine');
+      this.ping(3136, t + at, 0.025, 0.35, 'triangle');
+    }
+  }
+
   cue(kind: Cue): void {
     const t = this.ctx.currentTime + 0.02;
     switch (kind) {

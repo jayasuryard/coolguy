@@ -1,0 +1,72 @@
+[
+  {
+    "name": "night",
+    "hour": 0,
+    "source": "qwantani_night_puresky",
+    "sunU": 0.6162,
+    "horizon": [146, 148, 139]
+  },
+  {
+    "name": "dawn",
+    "hour": 5.6,
+    "source": "qwantani_dawn_puresky",
+    "sunU": 0.5928,
+    "horizon": [195, 183, 177]
+  },
+  {
+    "name": "sunrise",
+    "hour": 6.6,
+    "source": "qwantani_sunrise_puresky",
+    "sunU": 0.5967,
+    "horizon": [190, 181, 169]
+  },
+  {
+    "name": "morning",
+    "hour": 9,
+    "source": "qwantani_morning_puresky",
+    "sunU": 0.6006,
+    "horizon": [190, 198, 203]
+  },
+  {
+    "name": "noon",
+    "hour": 12.5,
+    "source": "qwantani_noon_puresky",
+    "sunU": 0.5986,
+    "horizon": [176, 194, 212]
+  },
+  {
+    "name": "afternoon",
+    "hour": 15.5,
+    "source": "qwantani_afternoon_puresky",
+    "sunU": 0.5986,
+    "horizon": [184, 201, 216]
+  },
+  {
+    "name": "golden",
+    "hour": 18,
+    "source": "kloppenheim_06_puresky",
+    "sunU": 0.5791,
+    "horizon": [167, 168, 167]
+  },
+  {
+    "name": "dusk",
+    "hour": 19.4,
+    "source": "qwantani_dusk_2_puresky",
+    "sunU": 0.5928,
+    "horizon": [163, 143, 157]
+  },
+  {
+    "name": "moonrise",
+    "hour": 20.6,
+    "source": "qwantani_moonrise_puresky",
+    "sunU": 0.5986,
+    "horizon": [148, 171, 186]
+  },
+  {
+    "name": "overcast",
+    "hour": -1,
+    "source": "kloofendal_overcast_puresky",
+    "sunU": 0.585,
+    "horizon": [134, 139, 149]
+  }
+]

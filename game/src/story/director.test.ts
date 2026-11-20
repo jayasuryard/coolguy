@@ -16,7 +16,10 @@ function setup() {
     groundY: (_x, _z, nearY) => nearY,
     say: (lines) => said.push(...lines),
     cue: (c) => cues.push(c),
-    caught: () => caught++,
+    caught: () => {
+      caught++;
+      return true;
+    },
     stepCompleted: (s) => done.push(s.id),
   });
   const kit = { x: 0, y: 0.9, z: 0 };

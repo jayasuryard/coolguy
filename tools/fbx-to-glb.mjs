@@ -171,8 +171,15 @@ const prim = doc
   .createPrimitive()
   .setAttribute('POSITION', acc('VEC3', new Float32Array(geo.attributes.position.array)))
   .setAttribute('NORMAL', acc('VEC3', new Float32Array(geo.attributes.normal.array)));
+// FBX puts v=0 at the bottom of the image, glTF at the top
 if (geo.attributes.uv)
-  prim.setAttribute('TEXCOORD_0', acc('VEC2', new Float32Array(geo.attributes.uv.array)));
+  prim.setAttribute(
+    'TEXCOORD_0',
+    acc(
+      'VEC2',
+      Float32Array.from(geo.attributes.uv.array, (x, k) => (k % 2 ? 1 - x : x)),
+    ),
+  );
 const tex = (name, png) =>
   png ? doc.createTexture(name).setImage(new Uint8Array(png)).setMimeType('image/png') : null;
 // Hunyuan metallic maps read near-black without an environment map; keep a hint of sheen only.

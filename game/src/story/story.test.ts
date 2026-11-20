@@ -66,7 +66,10 @@ describe('StoryState / Punch Clock mission', () => {
 describe('cells', () => {
   it('locates cells and rejects positions outside the envelope', () => {
     expect(cellAt(CONTENT.world, 150, 340)).toEqual({ col: 2, row: 5 });
-    expect(cellAt(CONTENT.world, -1, 10)).toBeNull();
+    // the grid now runs past the island: west to −128 m and far up the mainland
+    expect(cellAt(CONTENT.world, -1, 10)).toEqual({ col: -1, row: 0 });
+    expect(cellAt(CONTENT.world, 756, -17)).toEqual({ col: 11, row: -1 });
+    expect(cellAt(CONTENT.world, -200, 10)).toBeNull();
     expect(cellAt(CONTENT.world, 10, 10_000)).toBeNull();
   });
 

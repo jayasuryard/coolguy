@@ -1,10 +1,24 @@
 {
   "cellSize": 64,
-  "cols": 8,
-  "rows": 6,
+  "cols": 38,
+  "rows": 26,
+  "minCol": -2,
+  "minRow": -17,
   "spawnPad": "pad.quay.home",
   "autoFloors": false,
   "waterLevel": -1.6,
+  "map": {
+    "image": "assets/ui/map.webp",
+    "size": [1536, 1024],
+    "scale": [2.55, 2.33],
+    "offset": [75, 76],
+    "overview": {
+      "image": "assets/ui/map-city.webp",
+      "size": [1536, 1024],
+      "scale": [0.648, 0.634],
+      "offset": [60, 674]
+    }
+  },
   "districts": [
     {
       "id": "crown",
@@ -26,6 +40,19 @@
       "rows": [4, 5],
       "floorY": 0,
       "color": "#a69a8b"
+    },
+    {
+      "id": "cove",
+      "name": "Seaglass Cove",
+      "rows": [],
+      "floorY": 2.6,
+      "color": "#cbb49a",
+      "region": [
+        [560, 135],
+        [560, -160],
+        [960, -160],
+        [960, 135]
+      ]
     }
   ],
   "cells": [
@@ -43,10 +70,104 @@
           "position": [143, 4.6, 280]
         },
         {
-          "id": "quay.tram",
+          "id": "dress.barrel.1",
           "kind": "model",
-          "model": "KIT_tram_hunyuan",
-          "position": [150, 0, 290]
+          "model": "KIT_prop_barrel",
+          "position": [131, 0, 271.6],
+          "rotationY": 20
+        },
+        {
+          "id": "dress.barrel.2",
+          "kind": "model",
+          "model": "KIT_prop_barrel",
+          "position": [133.2, 0, 271.6],
+          "rotationY": 75
+        },
+        {
+          "id": "dress.barrel.3",
+          "kind": "model",
+          "model": "KIT_prop_barrel",
+          "position": [132.1, 0, 273.0],
+          "rotationY": 140
+        },
+        {
+          "id": "dress.solid.4",
+          "kind": "block",
+          "center": [132.1, 0.5, 272.2],
+          "size": [3.2, 1, 2.2],
+          "visual": false
+        },
+        {
+          "id": "dress.crate.5",
+          "kind": "model",
+          "model": "KIT_prop_crate",
+          "position": [135.4, 0, 271.7],
+          "rotationY": 12
+        },
+        {
+          "id": "dress.chest.6",
+          "kind": "model",
+          "model": "KIT_prop_chest",
+          "position": [136.9, 0, 272.9],
+          "rotationY": -25
+        },
+        {
+          "id": "dress.crate.7",
+          "kind": "model",
+          "model": "KIT_prop_crate",
+          "position": [135.6, 0.52, 271.8],
+          "rotationY": 40
+        },
+        {
+          "id": "dress.pot.8",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [146, 0, 271.4]
+        },
+        {
+          "id": "dress.pot.9",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [172, 0, 271.4]
+        },
+        {
+          "id": "dress.pot.10",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [186, 0, 271.4]
+        },
+        {
+          "id": "dress.bench.11",
+          "kind": "model",
+          "model": "KIT_prop_bench",
+          "position": [153.5, 0, 271.5]
+        },
+        {
+          "id": "dress.solid.12",
+          "kind": "block",
+          "center": [153.5, 0.45, 271.5],
+          "size": [1.8, 0.9, 0.7],
+          "visual": false
+        },
+        {
+          "id": "dress.bench.13",
+          "kind": "model",
+          "model": "KIT_prop_bench",
+          "position": [179.5, 0, 271.5]
+        },
+        {
+          "id": "dress.solid.14",
+          "kind": "block",
+          "center": [179.5, 0.45, 271.5],
+          "size": [1.8, 0.9, 0.7],
+          "visual": false
+        },
+        {
+          "id": "dress.planter.15",
+          "kind": "model",
+          "model": "KIT_prop_planter",
+          "position": [164, 0, 271.5],
+          "rotationY": 90
         }
       ]
     },
@@ -61,15 +182,15 @@
         {
           "id": "quay.home.amp",
           "kind": "model",
-          "model": "KIT_amp",
+          "model": "KIT_prop_boombox",
           "position": [132.6, 0, 328.6],
           "rotationY": -30
         },
         {
           "id": "quay.home.amp.solid",
           "kind": "block",
-          "center": [132.6, 0.25, 328.6],
-          "size": [0.6, 0.5, 0.35],
+          "center": [132.6, 0.235, 328.6],
+          "size": [0.72, 0.47, 0.2],
           "visual": false
         }
       ]
@@ -116,6 +237,27 @@
           "id": "pad.market.terminus",
           "kind": "pad",
           "position": [250, 9, 250]
+        },
+        {
+          "id": "dress.barrel.24",
+          "kind": "model",
+          "model": "KIT_prop_barrel",
+          "position": [243.5, 9, 246.6],
+          "rotationY": 30
+        },
+        {
+          "id": "dress.barrel.25",
+          "kind": "model",
+          "model": "KIT_prop_barrel",
+          "position": [244.9, 9, 247.4],
+          "rotationY": 100
+        },
+        {
+          "id": "dress.crate.26",
+          "kind": "model",
+          "model": "KIT_prop_crate",
+          "position": [246.6, 9, 246.8],
+          "rotationY": -10
         }
       ]
     },
@@ -127,7 +269,8 @@
           "kind": "block",
           "center": [276, 19, 210],
           "size": [8, 6, 6],
-          "color": "#5a4b6b"
+          "color": "#5a4b6b",
+          "visual": false
         },
         {
           "id": "receiver.market.press",
@@ -143,6 +286,18 @@
           "id": "receiver.market.relay",
           "kind": "receiver",
           "position": [288, 18.6, 206]
+        },
+        {
+          "id": "dress.pot.27",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [256, 9, 246.6]
+        },
+        {
+          "id": "dress.pot.28",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [262, 9, 246.6]
         }
       ]
     },
@@ -154,7 +309,8 @@
           "kind": "block",
           "center": [300, 53.5, 80],
           "size": [6, 3, 4],
-          "color": "#8a6d2f"
+          "color": "#8a6d2f",
+          "visual": false
         },
         {
           "id": "receiver.crown.lathe",
@@ -170,6 +326,129 @@
           "id": "receiver.crown.relay",
           "kind": "receiver",
           "position": [318, 54.6, 104]
+        },
+        {
+          "id": "dress.pot.30",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [295.6, 52, 81.6]
+        },
+        {
+          "id": "dress.pot.31",
+          "kind": "model",
+          "model": "KIT_prop_pot",
+          "position": [304.4, 52, 81.6]
+        },
+        {
+          "id": "dress.bench.32",
+          "kind": "model",
+          "model": "KIT_prop_bench",
+          "position": [292, 52, 100],
+          "rotationY": 90
+        }
+      ]
+    },
+    {
+      "id": "cell.11.-1",
+      "objects": [
+        {
+          "id": "pad.cove.promenade",
+          "kind": "pad",
+          "position": [756, 2.6, -17]
+        }
+      ]
+    },
+    {
+      "id": "cell.9.1",
+      "objects": [
+        {
+          "id": "pad.cove.marina",
+          "kind": "pad",
+          "position": [612, 2.6, 98]
+        }
+      ]
+    },
+    {
+      "id": "cell.4.5",
+      "objects": [
+        {
+          "id": "dress.barrel.16",
+          "kind": "model",
+          "model": "KIT_prop_barrel",
+          "position": [284, 0, 326.5],
+          "rotationY": 10
+        },
+        {
+          "id": "dress.barrel.17",
+          "kind": "model",
+          "model": "KIT_prop_barrel",
+          "position": [285.4, 0, 327.6],
+          "rotationY": 60
+        },
+        {
+          "id": "dress.chest.18",
+          "kind": "model",
+          "model": "KIT_prop_chest",
+          "position": [287.6, 0, 326.2],
+          "rotationY": -20
+        },
+        {
+          "id": "dress.crate.19",
+          "kind": "model",
+          "model": "KIT_prop_crate",
+          "position": [289.6, 0, 327.4],
+          "rotationY": 35
+        },
+        {
+          "id": "dress.crate.20",
+          "kind": "model",
+          "model": "KIT_prop_crate",
+          "position": [289.4, 0.52, 327.2],
+          "rotationY": -15
+        },
+        {
+          "id": "dress.solid.21",
+          "kind": "block",
+          "center": [287, 0.5, 326.9],
+          "size": [7, 1, 2.6],
+          "visual": false
+        },
+        {
+          "id": "dress.bench.22",
+          "kind": "model",
+          "model": "KIT_prop_bench",
+          "position": [262, 0, 322],
+          "rotationY": 180
+        },
+        {
+          "id": "dress.bench.23",
+          "kind": "model",
+          "model": "KIT_prop_bench",
+          "position": [310, 0, 322],
+          "rotationY": 180
+        }
+      ]
+    },
+    {
+      "id": "cell.3.4",
+      "objects": [
+        {
+          "id": "dress.planter.29",
+          "kind": "model",
+          "model": "KIT_prop_planter",
+          "position": [238.5, 9, 259]
+        }
+      ]
+    },
+    {
+      "id": "cell.5.1",
+      "objects": [
+        {
+          "id": "dress.bench.33",
+          "kind": "model",
+          "model": "KIT_prop_bench",
+          "position": [322, 52, 100],
+          "rotationY": -90
         }
       ]
     }

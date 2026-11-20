@@ -23,8 +23,11 @@ export interface DirectorHost {
   groundY(x: number, z: number, nearY: number): number;
   say(lines: string[]): void;
   cue(kind: Cue): void;
-  /** Kit was caught by an enemy: put him back on the safe pad. */
-  caught(): void;
+  /**
+   * An enemy reached Kit. The host takes a heart and knocks him back; it returns true when he
+   * is out of hearts and has been sent back to the safe pad (the fight then starts over).
+   */
+  caught(by: ActorState): boolean;
   stepCompleted(step: StepDef): void;
 }
 
@@ -157,9 +160,10 @@ export class Director {
             : `Get within range of the ${e.def.name}`;
         if (d < 1.1 + 0.4 * (e.def.scale ?? 1) && e.stagger <= 0) {
           this.host.cue('caught');
-          this.host.say([`${e.def.name} resets the count. Back to the landing.`]);
-          this.place(e);
-          this.host.caught();
+          if (this.host.caught(e)) {
+            this.host.say([`${e.def.name} resets the count. Back to the landing.`]);
+            this.place(e);
+          } else e.stagger = 1.8; // it winds up again while Kit gets clear
         }
         break;
       }

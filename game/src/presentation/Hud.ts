@@ -26,6 +26,69 @@ export class Hud {
   private readonly queue: string[] = [];
   private sayTimer = 0;
 
+  private vitalsKey = '';
+
+  /** Hearts, loose change and the district Kit is standing in. */
+  setVitals(hearts: number, max: number, coins: number, district: string): void {
+    const key = `${hearts}|${max}|${coins}|${district}`;
+    if (key === this.vitalsKey) return;
+    const coinsChanged = !this.vitalsKey.includes(`|${coins}|`);
+    this.vitalsKey = key;
+    $('hud-hearts').replaceChildren(
+      ...Array.from({ length: max }, (_, i) => {
+        const h = document.createElement('i');
+        if (i >= hearts) h.className = 'off';
+        return h;
+      }),
+    );
+    const coinEl = $('hud-coins');
+    coinEl.querySelector('span')!.textContent = String(coins);
+    if (coinsChanged) {
+      coinEl.classList.remove('bump');
+      void coinEl.offsetWidth;
+      coinEl.classList.add('bump');
+    }
+    $('hud-district').textContent = district;
+  }
+
+  private clockText = '';
+
+  /** Time of day and weather, e.g. "18:30 · Rain". */
+  setClock(text: string): void {
+    if (text === this.clockText) return;
+    this.clockText = text;
+    $('hud-clock').textContent = text;
+  }
+
+  /** Red flash at the edges when Kit takes a hit. */
+  hurt(): void {
+    const el = $('hud-hurt');
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+  }
+
+  /** Goggles overlay. `reticle` in percent of the viewport, or null to hide it. */
+  setLens(
+    on: boolean,
+    reticle: { x: number; y: number; edge: boolean; label: string } | null,
+  ): void {
+    $('lens').hidden = !on;
+    const r = $('lens-reticle');
+    r.hidden = !on || !reticle;
+    if (!on || !reticle) return;
+    r.style.left = `${reticle.x}%`;
+    r.style.top = `${reticle.y}%`;
+    r.classList.toggle('edge', reticle.edge);
+    r.querySelector('span')!.textContent = reticle.label;
+  }
+
+  setMapPanel(district: string, chapter: string, objective: string): void {
+    $('map-district').textContent = district;
+    $('map-chapter').textContent = chapter;
+    $('map-objective').textContent = objective;
+  }
+
   /** Chapter title, objective and distance to it (metres; null = no waypoint). */
   setObjective(chapter: string, text: string | null, metres: number | null): void {
     const key = text ? `${chapter}|${text}|${metres === null ? '' : Math.round(metres)}` : '';
