@@ -166,6 +166,12 @@ export class Environment {
 
   // ---------------------------------------------------------------- clock and weather
 
+  /** True once the sky photographs this hour needs have arrived. */
+  get skyReady(): boolean {
+    for (const t of this.textures.values()) if (!t) return false;
+    return this.textures.size > 0;
+  }
+
   /** Clock text for the HUD, e.g. "18:30 · Rain". */
   get label(): string {
     const h = Math.floor(this.hour);

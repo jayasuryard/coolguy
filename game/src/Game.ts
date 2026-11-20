@@ -23,6 +23,7 @@ import { buildMachines } from './presentation/Machines';
 import { Fx } from './presentation/Fx';
 import { PostFx } from './presentation/PostFx';
 import { Stage } from './presentation/Stage';
+import { scansReady } from './presentation/Surfaces';
 import { Tram } from './presentation/Tram';
 import { EventBus, type DomainEvent } from './sim/events';
 import { FixedStepLoop } from './sim/FixedStepLoop';
@@ -431,6 +432,36 @@ export class Game {
     this.director.reset();
     this.teleportToPad(this.story.lastSafePad);
     return true;
+  }
+
+  /**
+   * Get everything on to the graphics card before the first visible frame: wait for the
+   * textures and sky, compile every shader, and draw a few frames unseen. Without this the game
+   * opens with a long freeze and surfaces popping in. Reports progress 0–1.
+   */
+  async warmUp(onProgress: (fraction: number, status: string) => void): Promise<void> {
+    const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+    this.env.update(this.kitView.position, this.camera, 0);
+    onProgress(0.1, 'Hanging the sky…');
+    for (let waited = 0; waited < 8000 && !(scansReady() && this.env.skyReady); waited += 100) {
+      await pause(100);
+      onProgress(0.1 + 0.4 * Math.min(1, waited / 3000), 'Laying the cobbles…');
+    }
+    onProgress(0.55, 'Lighting the lamps…');
+    this.rig.update(0, this.kitView.position, { dx: 0, dy: 0, padX: 0, padY: 0 });
+    try {
+      await this.renderer.compileAsync(this.scene, this.camera);
+    } catch (err) {
+      console.warn('[game] shader warm-up skipped', err);
+    }
+    onProgress(0.85, 'Tuning up…');
+    for (let i = 0; i < 3; i++) {
+      this.env.update(this.kitView.position, this.camera, 0);
+      this.renderer.shadowMap.needsUpdate = true;
+      this.post.render();
+      await pause(30);
+    }
+    onProgress(1, 'Ready.');
   }
 
   start(): void {

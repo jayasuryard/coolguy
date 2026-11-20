@@ -177,8 +177,22 @@ async function startNewGame(): Promise<void> {
   await startGame(save);
 }
 
+/** Resolve once the browser has drawn (or shortly after, if the tab is not being drawn). */
+const painted = (): Promise<void> =>
+  new Promise((resolve) => {
+    const timer = window.setTimeout(resolve, 150);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        window.clearTimeout(timer);
+        resolve();
+      }),
+    );
+  });
+
+let starting = false;
 async function startGame(save: SaveData): Promise<void> {
-  if (!preloaded || game) return;
+  if (!preloaded || game || starting) return;
+  starting = true;
   // The menu click/Enter is the gesture that unlocks audio.
   let audio: AudioContext | null = null;
   if (typeof AudioContext !== 'undefined') {
@@ -189,6 +203,17 @@ async function startGame(save: SaveData): Promise<void> {
       audio = null;
     }
   }
+  // Building the world takes a few seconds: do it behind the loading screen, not a frozen menu.
+  show('loading');
+  $('loading-error').hidden = true;
+  let tip = 0;
+  window.clearInterval(tipTimer);
+  tipTimer = window.setInterval(() => {
+    tip = (tip + 1) % TIPS.length;
+    $('loading-tip').textContent = TIPS[tip]!;
+  }, 4500);
+  progress(0.04, 'Setting the stage…');
+  await painted();
   const { Game } = await import('./Game');
   game = Game.create(
     $('app'),
@@ -209,6 +234,11 @@ async function startGame(save: SaveData): Promise<void> {
     },
     preloaded,
   );
+  progress(0.45, 'Planting the hillside…');
+  await painted();
+  await game.warmUp((f, status) => progress(0.45 + f * 0.55, status));
+  window.clearInterval(tipTimer);
+  await painted();
   show(null);
   game.start();
   if (import.meta.env.DEV) {

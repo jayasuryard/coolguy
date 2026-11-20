@@ -50,6 +50,12 @@ function scan(slot: Slot, map: 'c' | 'n' | 'a' | 'h'): THREE.Texture {
   return t;
 }
 
+/** True once every scanned texture asked for so far has arrived. */
+export function scansReady(): boolean {
+  for (const t of cache.values()) if (!t.image) return false;
+  return true;
+}
+
 /**
  * Procedural surface detail for the city's flat vertex-coloured materials: paving setts, ashlar
  * courses, mottled plaster, roof tiles, plank grain. Computed in world space in the shader, so
