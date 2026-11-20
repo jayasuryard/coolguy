@@ -78,8 +78,13 @@ varying vec4 vSurfUv;
 #endif
 `;
 const VERT_BODY = /* glsl */ `
+#ifdef USE_INSTANCING
+vSurfPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+vSurfNrm = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * objectNormal);
+#else
 vSurfPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
 vSurfNrm = normalize(mat3(modelMatrix) * objectNormal);
+#endif
 #if SURF_KIND == 11
 vSurfUv = surfUv;
 #endif

@@ -212,6 +212,11 @@ export function regrowCanopies(
 /** A copy of `source` (world space) without the connected pieces `drop` selects. */
 export function withoutPieces(source: THREE.Mesh, drop: (b: Blob) => boolean): THREE.Mesh {
   const g = source.geometry.index ? source.geometry.toNonIndexed() : source.geometry.clone();
+  // quantised (integer) positions cannot hold world coordinates: widen to floats first
+  const raw = g.getAttribute('position');
+  const wide = new Float32Array(raw.count * 3);
+  for (let i = 0; i < raw.count; i++) wide.set([raw.getX(i), raw.getY(i), raw.getZ(i)], i * 3);
+  g.setAttribute('position', new THREE.BufferAttribute(wide, 3));
   g.applyMatrix4(source.matrixWorld);
   const probe = new THREE.Mesh(g);
   const gone = pieces(probe).filter(drop);

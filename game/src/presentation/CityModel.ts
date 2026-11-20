@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { pieces, regrowCanopies, withoutPieces, type Blob } from './Foliage';
 import { registerLamp } from './ambience';
+import { dressBuildings } from './Facades';
 import { gltfLoader } from './loader';
 import { applySurface } from './Surfaces';
 
@@ -103,6 +104,7 @@ export class CityModel {
     // available those are handed over (recorded as tree spots); cypresses, shrubs and flowers
     // are regrown in place as fuller canopies.
     const grown: THREE.Mesh[] = [];
+    const extras: THREE.Object3D[] = [];
     const spots: TreeSpot[] = [];
     const stems: Array<{ x: number; z: number; y: number }> = [];
     const isTree = (b: Blob, planter: boolean): boolean => {
@@ -222,8 +224,16 @@ export class CityModel {
         drop.push(mesh);
       });
     }
+    // windows, shutters, doors, balconies and the station's ironwork
+    const facades = dressBuildings(scene, nameOf);
+    for (const [old, fresh] of facades.replace) {
+      drop.push(old);
+      extras.push(fresh);
+    }
+    extras.push(...facades.add);
     drop.forEach((o) => o.removeFromParent());
     grown.forEach((m) => scene.add(m));
+    extras.forEach((m) => scene.add(m));
 
     const root = new THREE.Group();
     root.name = 'city';
